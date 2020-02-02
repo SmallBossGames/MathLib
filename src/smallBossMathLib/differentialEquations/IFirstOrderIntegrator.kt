@@ -6,6 +6,7 @@ import org.apache.commons.math3.ode.FirstOrderIntegrator
 interface IFirstOrderIntegrator {
     val maxEvaluations : Int
     val evaluations : Int
+    val accuracy : Double
 
     fun integrate(
         t0: Double,
@@ -14,4 +15,6 @@ interface IFirstOrderIntegrator {
         outY: DoubleArray,
         equations: (t: Double, inY: DoubleArray, outY: DoubleArray) -> Unit
     )
+
+    fun addStepHandler(handler: (t: Double, y: DoubleArray) -> Unit)
 }

@@ -3,8 +3,11 @@ package smallBossMathLib.explicitDifferentialEquations
 import smallBossMathLib.differentialEquations.IFirstOrderIntegrator
 import kotlin.math.*
 
-class StabilityControlEulerIntegrator(override val maxEvaluations: Int, override val evaluations: Int)
-    : IFirstOrderIntegrator
+class StabilityControlSecondOrderIntegrator(override val maxEvaluations: Int,
+                                            override val evaluations: Int,
+                                            override val accuracy: Double
+)
+    : RungeKuttaIntegratorBase(), IFirstOrderIntegrator
 {
     override fun integrate(
         t0: Double,
@@ -13,6 +16,8 @@ class StabilityControlEulerIntegrator(override val maxEvaluations: Int, override
         outY: DoubleArray,
         equations: (t: Double, inY: DoubleArray, outY: DoubleArray) -> Unit
     ) {
+        executeStepHandlers(t0, y0)
+
         y0.copyInto(outY)
 
         var fCurrentBuffer = DoubleArray(y0.size)
@@ -30,7 +35,6 @@ class StabilityControlEulerIntegrator(override val maxEvaluations: Int, override
         equations(time, outY, fLastBuffer)
 
         while (time < t0 + t) {
-
             for (i in fLastBuffer.indices) {
                 k1Buffer[i] = step * fLastBuffer[i]
                 yNextBuffer[i] = outY[i] + 2.0 / 3.0 * k1Buffer[i]
@@ -53,14 +57,15 @@ class StabilityControlEulerIntegrator(override val maxEvaluations: Int, override
             val timeNext = step + time
             equations(timeNext, yNextBuffer, fCurrentBuffer)
 
-            val q1 = findQ1(k1Buffer, k2Buffer, 0.001)
+            val q1 = findQ1(k1Buffer, k2Buffer, accuracy)
             if (q1 < 1.0) {
                 step = min(t + t0 - time , q1 * step / 1.1)
                 continue
             }
 
-            val q2 = findQ2(fLastBuffer, fCurrentBuffer, step, 0.001)
+            val q2 = findQ2(fLastBuffer, fCurrentBuffer, step, accuracy)
             val r = findR(k1Buffer, k2Buffer, k3Buffer)
+
 
             if (q2 < 1.0 && r < 1) {
                 step = min(t + t0 - time , q2 * step / 1.1)
@@ -73,15 +78,17 @@ class StabilityControlEulerIntegrator(override val maxEvaluations: Int, override
                 max(step, min(q1, min(q2, r))*step)
             }
 
-            time = timeNext
-
             val temp = fLastBuffer
             fLastBuffer = fCurrentBuffer
             fCurrentBuffer = temp
 
+            time = timeNext
+
             for (i in yNextBuffer.indices) {
                 outY[i] = yNextBuffer[i]
             }
+
+            executeStepHandlers(time, outY)
         }
     }
 
@@ -95,6 +102,7 @@ class StabilityControlEulerIntegrator(override val maxEvaluations: Int, override
         }
         norm = sqrt(norm)
 
+        //стр. 95
         return (((6.0 * 2.0/3.0 * accuracy) / (1.0 - 6.0 * 1.0/16.0)) / norm)
     }
 
