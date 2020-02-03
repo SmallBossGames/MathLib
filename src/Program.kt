@@ -89,8 +89,6 @@ fun main() {
 
     //Let's try with Van-der-Paul
 
-    val mu = 8.0
-
     /*testRungeKuttaWithStepHandlerSecondOrder(8.0)
     testRungeKuttaWithStepHandlerSecondOrder(6.0)
     testRungeKuttaWithStepHandlerSecondOrder(4.0)

@@ -73,22 +73,22 @@ class StabilityControlFourthOrderIntegrator(
                 kMatrix[4][i] = step * fCurrentBuffer[i]
                 yNextBuffer[i] = outY[i] +
                         1.0 / 6.0 * kMatrix[0][i] +
-                        2.0 / 3.0 * kMatrix[2][i] +
-                        1.0 / 6.0 * kMatrix[2][i]
+                        2.0 / 3.0 * kMatrix[3][i] +
+                        1.0 / 6.0 * kMatrix[4][i]
             }
 
             val timeNext = step + time
             equations(timeNext, yNextBuffer, fCurrentBuffer)
 
-            val q1 = findQ1(kMatrix, accuracy)
-            if (q1 < 1.0) {
-                step = min(t + t0 - time , q1 * step / 1.1)
+            val q = findQ1(kMatrix, accuracy)
+            if (q < 1.0) {
+                step = min(t + t0 - time , q * step)
                 continue
             }
 
             val r = findR(kMatrix[0], kMatrix[1], kMatrix[2])
 
-            step = max(step, min(q1, r)*step)
+            step = max(step, min(q, r)*step)
 
             val temp = fLastBuffer
             fLastBuffer = fCurrentBuffer
@@ -110,10 +110,10 @@ class StabilityControlFourthOrderIntegrator(
             val d = 2*kMatrix[0][i] - 9*kMatrix[2][i] + 8*kMatrix[3][i] - kMatrix[4][i]
             norm += d*d
         }
-        norm = sqrt(norm)
-
+        norm = sqrt(norm)/150.0
+        val result = accuracy.pow(5.0/4.0) / norm
         //стр. 95
-        return (5*accuracy.pow(5.0/4.0))/(norm/30.0)
+        return result.pow(1.0/5.0)
     }
 
     private fun findR(k1: DoubleArray, k2: DoubleArray, k3: DoubleArray) : Double {
