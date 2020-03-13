@@ -4,7 +4,7 @@ import org.apache.commons.math3.ode.FirstOrderDifferentialEquations
 import org.apache.commons.math3.ode.FirstOrderIntegrator
 
 interface IFirstOrderIntegrator {
-    val maxEvaluations : Int
+    val maxEvaluationCount : Int
     val evaluations : Int
     val accuracy : Double
 

@@ -4,17 +4,16 @@ import smallBossMathLib.differentialEquations.IFirstOrderIntegrator
 import kotlin.math.*
 
 class StabilityControlFourthOrderIntegrator(
-    override val maxEvaluations: Int,
     override val evaluations: Int,
     override val accuracy: Double
 ) : RungeKuttaIntegratorBase(), IFirstOrderIntegrator{
 
     override fun integrate(
-        t0: kotlin.Double,
-        y0: kotlin.DoubleArray,
-        t: kotlin.Double,
-        outY: kotlin.DoubleArray,
-        equations: (t: kotlin.Double, inY: kotlin.DoubleArray, outY: kotlin.DoubleArray) -> kotlin.Unit
+        t0: Double,
+        y0: DoubleArray,
+        t: Double,
+        outY: DoubleArray,
+        equations: (t: Double, inY: DoubleArray, outY: DoubleArray) -> Unit
     ) {
         executeStepHandlers(t0, y0)
 

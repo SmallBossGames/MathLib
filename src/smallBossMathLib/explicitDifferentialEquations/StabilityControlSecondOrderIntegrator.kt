@@ -3,10 +3,7 @@ package smallBossMathLib.explicitDifferentialEquations
 import smallBossMathLib.differentialEquations.IFirstOrderIntegrator
 import kotlin.math.*
 
-class StabilityControlSecondOrderIntegrator(override val maxEvaluations: Int,
-                                            override val evaluations: Int,
-                                            override val accuracy: Double
-)
+class StabilityControlSecondOrderIntegrator(override val evaluations: Int, override val accuracy: Double)
     : RungeKuttaIntegratorBase(), IFirstOrderIntegrator
 {
     override fun integrate(
@@ -22,6 +19,7 @@ class StabilityControlSecondOrderIntegrator(override val maxEvaluations: Int,
 
         var fCurrentBuffer = DoubleArray(y0.size)
         var fLastBuffer = DoubleArray(y0.size)
+        var currentEvaluationsCount = 0
 
         val yNextBuffer = DoubleArray(y0.size)
 
@@ -34,7 +32,7 @@ class StabilityControlSecondOrderIntegrator(override val maxEvaluations: Int,
 
         equations(time, outY, fLastBuffer)
 
-        while (time < t0 + t) {
+        while (time < t0 + t && isNextEvaluationAllow(currentEvaluationsCount)) {
             for (i in fLastBuffer.indices) {
                 k1Buffer[i] = step * fLastBuffer[i]
                 yNextBuffer[i] = outY[i] + 2.0 / 3.0 * k1Buffer[i]
@@ -89,6 +87,8 @@ class StabilityControlSecondOrderIntegrator(override val maxEvaluations: Int,
             }
 
             executeStepHandlers(time, outY)
+
+            currentEvaluationsCount++
         }
     }
 
@@ -114,7 +114,7 @@ class StabilityControlSecondOrderIntegrator(override val maxEvaluations: Int,
             val d = f1[i] - f2[i]
             norm += d*d
         }
-        norm = sqrt(norm) * step
+        norm *= step
 
         return ((6.0*accuracy / (1.0 - 6.0 * 1.0 / 16.0)) / norm)
     }
