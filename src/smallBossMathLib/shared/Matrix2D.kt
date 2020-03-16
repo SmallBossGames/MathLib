@@ -59,6 +59,18 @@ class Matrix2D(val size: Int) {
         }
     }
 
+    fun multiply(vector: DoubleArray, outVector: DoubleArray){
+        if(outVector.size != vector.size || vector.size != size)
+            throw IllegalArgumentException()
+
+        for (i in outVector.indices){
+            outVector[i] = 0.0
+            for (j in outVector.indices){
+                outVector[i] += vector[j] * this[i, j]
+            }
+        }
+    }
+
     @Throws(IllegalArgumentException::class)
     fun solveLU(rightPart: DoubleArray, outResultVector: DoubleArray){
         if(rightPart.size != size || outResultVector.size != size) {
