@@ -1,16 +1,13 @@
 package smallBossMathLib.shared
 
-import java.lang.Math.pow
-import kotlin.math.abs
 import kotlin.math.max
-import kotlin.math.pow
 
 const val rMin = 1e-14
 
-fun findJacobiMatrix(inY:DoubleArray,
+inline fun findJacobiMatrix(inY:DoubleArray,
                      t: Double,
                      equations: (t: Double, inY: DoubleArray, outF: DoubleArray) -> Unit,
-                     outJacobiMatrix: Array<DoubleArray>) {
+                     outJacobiMatrix: Matrix2D) {
     val tempY = inY.clone()
     val tempF = DoubleArray(tempY.size)
     val tempFWithDelta = DoubleArray(tempY.size)
@@ -24,37 +21,37 @@ fun findJacobiMatrix(inY:DoubleArray,
         equations(t, tempY, tempFWithDelta)
 
         for (j in tempY.indices){
-            outJacobiMatrix[j][i] = (tempFWithDelta[j] - tempF[j]) / r
+            outJacobiMatrix[j, i] = (tempFWithDelta[j] - tempF[j]) / r
         }
 
         tempY[i] = inY[i]
     }
 }
 
-fun multipleMatrix2D(constant: Double, matrix: Array<DoubleArray>, outMatrix: Array<DoubleArray>){
+fun multipleMatrix2D(constant: Double, matrix: Matrix2D, outMatrix: Matrix2D){
     for (i in outMatrix.indices)
-        for (j in outMatrix[i].indices)
-            outMatrix[i][j] = matrix[i][j] * constant
+        for (j in outMatrix.indices)
+            outMatrix[i, j] = matrix[i, j] * constant
 }
 
-fun sumMatrix2D(m1: Array<DoubleArray>, m2: Array<DoubleArray>, outMatrix: Array<DoubleArray>){
+fun sumMatrix2D(m1: Matrix2D, m2: Matrix2D, outMatrix: Matrix2D){
     for (i in outMatrix.indices)
-        for (j in outMatrix[i].indices)
-            outMatrix[i][j] = m1[i][j] + m2[i][j]
+        for (j in outMatrix.indices)
+            outMatrix[i, j] = m1[i, j] + m2[i, j]
 }
 
-fun subtractMatrix2D(m1: Array<DoubleArray>, m2: Array<DoubleArray>, outMatrix: Array<DoubleArray>){
+fun subtractMatrix2D(m1: Matrix2D, m2: Matrix2D, outMatrix: Matrix2D){
     for (i in outMatrix.indices)
-        for (j in outMatrix[i].indices)
-            outMatrix[i][j] = m1[i][j] - m2[i][j]
+        for (j in outMatrix.indices)
+            outMatrix[i, j] = m1[i, j] - m2[i, j]
 }
 
-fun createUnitMatrix(size: Int) : Array<DoubleArray>
+fun createUnitMatrix2D(size: Int) : Matrix2D
 {
-    val e = Array(size){DoubleArray(size)}
+    val e = Matrix2D(size)
 
     for (i in e.indices)
-        e[i][i] = 1.0
+        e[i, i] = 1.0
 
     return e
 }

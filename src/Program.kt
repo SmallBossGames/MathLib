@@ -4,6 +4,7 @@ import org.apache.commons.math3.ode.FirstOrderDifferentialEquations
 import smallBossMathLib.explicitDifferentialEquations.StabilityControlFourthOrderIntegrator
 import smallBossMathLib.explicitDifferentialEquations.StabilityControlSecondOrderIntegrator
 import smallBossMathLib.examples.rungeKuttaSecondOrderExample
+import smallBossMathLib.examples.*
 import java.io.File
 import kotlin.math.pow
 
@@ -43,20 +44,22 @@ class CircleODE(private val c: DoubleArray, private val omega: Double) : FirstOr
 fun main() {
     //Let's try with Van-der-Paul
 
-    testRungeKuttaWithStepHandlerSecondOrder(8.0)
+    /*testRungeKuttaWithStepHandlerSecondOrder(8.0)
     testRungeKuttaWithStepHandlerSecondOrder(6.0)
     testRungeKuttaWithStepHandlerSecondOrder(4.0)
     testRungeKuttaWithStepHandlerSecondOrder(3.0)
     testRungeKuttaWithStepHandlerSecondOrder(2.5)
     testRungeKuttaWithStepHandlerSecondOrder(2.0)
     testRungeKuttaWithStepHandlerSecondOrder(1.0)
-    testRungeKuttaWithStepHandlerSecondOrder(0.01)
+    testRungeKuttaWithStepHandlerSecondOrder(0.01)*/
 
     //testRungeKuttaWithStepHandlerFourthOrder(1000.0)
 
     //ringModualtorExample()
 
-    rungeKuttaSecondOrderExample(3e-2)
+    //rungeKuttaSecondOrderExample(3e-2)
+
+    luTest()
 }
 
 fun testRungeKuttaSecondOrder(mu: Double)
