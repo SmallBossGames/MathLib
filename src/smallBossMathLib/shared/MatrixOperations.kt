@@ -1,6 +1,8 @@
 package smallBossMathLib.shared
 
+import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.sqrt
 
 const val rMin = 1e-14
 
@@ -14,7 +16,7 @@ inline fun findJacobiMatrix(inY:DoubleArray,
 
     for (i in tempY.indices){
 
-        val r = max(rMin, (rMin * tempY[i]))
+        val r = max(rMin, (sqrt(rMin) * abs(tempY[i])))
         tempY[i] += r
 
         equations(t, inY, tempF)

@@ -59,7 +59,10 @@ fun main() {
 
     //rungeKuttaSecondOrderExample(3e-2)
 
-    luTest()
+    //luTest()
+
+    mk22VdPExample(6.0)
+    rk2VdPExample(6.0)
 }
 
 fun testRungeKuttaSecondOrder(mu: Double)
