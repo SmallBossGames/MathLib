@@ -1,8 +1,8 @@
-package smallBossMathLib.explicitDifferentialEquations
+package smallBossMathLib.shared
 
 import smallBossMathLib.differentialEquations.IFirstOrderIntegrator
 
-abstract class RungeKuttaIntegratorBase {
+abstract class IntegratorBase {
     var isEvaluationControlEnabled: Boolean = false
         private set
 

@@ -1,6 +1,7 @@
 package smallBossMathLib.examples
 
 import smallBossMathLib.explicitDifferentialEquations.StabilityControlSecondOrderIntegrator
+import smallBossMathLib.implicitDifferentialEquations.MK22Integrator
 import java.io.File
 import kotlin.math.*
 
@@ -49,13 +50,32 @@ private fun mainFunction(t: Double, i: DoubleArray, o: DoubleArray){
     o[14] = (1.0/Ls1)*(-i[1]-(Rc+Rg1)*i[14])
 }
 
-fun ringModualtorExample(){
+fun ringModulatorRK2Example(){
     val integrator = StabilityControlSecondOrderIntegrator( 10000, 0.000001)
     val builder = StringBuilder()
     val output = DoubleArray(15) {0.0}
 
     integrator.addStepHandler(){
-        t, y -> builder.append("${t};${y[13]} \n");
+        t, y -> builder.append("${t};${y[13]} \n")
+    }
+
+    integrator.enableEvaluationCountCheck(20000)
+
+    integrator.integrate(0.0, output, 0.001, output, ::mainFunction)
+
+    val writingText = builder.replace(Regex("[.]"), ",")
+
+    File("data_modulator_test.csv ").writeText(writingText)
+}
+
+fun ringModulatorMK22Example(){
+    val integrator = MK22Integrator(10000, 20, 2.0, 0.000001)
+    //val integrator = StabilityControlSecondOrderIntegrator( 10000, 0.000001)
+    val builder = StringBuilder()
+    val output = DoubleArray(15) {0.0}
+
+    integrator.addStepHandler(){
+            t, y -> builder.append("${t};${y[13]} \n")
     }
 
     integrator.enableEvaluationCountCheck(20000)

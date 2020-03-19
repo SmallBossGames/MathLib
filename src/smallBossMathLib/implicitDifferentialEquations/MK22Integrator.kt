@@ -1,9 +1,6 @@
 package smallBossMathLib.implicitDifferentialEquations
 
-import smallBossMathLib.shared.Matrix2D
-import smallBossMathLib.shared.findJacobiMatrix
-import smallBossMathLib.shared.multipleMatrix2D
-import smallBossMathLib.shared.subtractMatrix2D
+import smallBossMathLib.shared.*
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -22,9 +19,9 @@ const val v = 1.0
 class MK22Integrator (val evaluations: Int,
                       val freezeJacobiSteps: Int,
                       val stepSizeCoefficient: Double,
-                      val accuracy: Double) {
+                      val accuracy: Double) : IntegratorBase() {
 
-    inline fun integrate(
+    fun integrate(
         t0: Double,
         y0: DoubleArray,
         t: Double,
@@ -33,6 +30,8 @@ class MK22Integrator (val evaluations: Int,
 
         if(y0.size != outY.size)
             throw IllegalArgumentException()
+
+        executeStepHandlers(t0, y0)
 
         y0.copyInto(outY)
 
@@ -52,8 +51,9 @@ class MK22Integrator (val evaluations: Int,
         var time = t0
         var freezeSteps = 0
         var isNeedFindJacobi = true
+        var currentEvaluationsCount = 0
 
-        while (time < endTime){
+        while (time < endTime && isNextEvaluationAllow(currentEvaluationsCount)){
             if(freezeSteps == 0 && isNeedFindJacobi){
                 findJacobiMatrix(outY, t0, equations, jacobiMatrix)
             } else{
@@ -127,6 +127,9 @@ class MK22Integrator (val evaluations: Int,
 
             time += step
             freezeSteps++
+            currentEvaluationsCount++
+
+            executeStepHandlers(time, outY)
 
             val stepNew = min(q1, q2) * step
 

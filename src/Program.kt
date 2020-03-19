@@ -61,8 +61,11 @@ fun main() {
 
     //luTest()
 
-    mk22VdPExample(6.0)
-    rk2VdPExample(6.0)
+    //mk22VdPExample(6.0)
+    //rk2VdPExample(6.0)
+    rk2VdPAlternateExample(3.0e-2)
+
+    //ringModulatorMK22Example()
 }
 
 fun testRungeKuttaSecondOrder(mu: Double)

@@ -1,10 +1,11 @@
 package smallBossMathLib.explicitDifferentialEquations
 
 import smallBossMathLib.differentialEquations.IFirstOrderIntegrator
+import smallBossMathLib.shared.IntegratorBase
 import kotlin.math.*
 
 class StabilityControlSecondOrderIntegrator(override val evaluations: Int, override val accuracy: Double)
-    : RungeKuttaIntegratorBase(), IFirstOrderIntegrator
+    : IntegratorBase(), IFirstOrderIntegrator
 {
     override fun integrate(
         t0: Double,
