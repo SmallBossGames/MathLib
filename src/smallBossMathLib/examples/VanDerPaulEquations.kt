@@ -26,7 +26,14 @@ fun rungeKuttaSecondOrderExample(p: Double)
 
 fun mk22VdPExample(mu: Double){
     val builder = StringBuilder()
-    val solverRK2 = MK22Integrator(100,20, 2.0, 0.001)
+    val solverRK2 = MK22Integrator(
+        100,
+        20,
+        2.0,
+        0.001,
+        0.0,
+        Double.POSITIVE_INFINITY)
+
     solverRK2.addStepHandler { t, y ->  builder.append("${y[0]};${y[1]} \n");}
     solverRK2.enableEvaluationCountCheck(2000)
 
@@ -66,10 +73,17 @@ fun rk2VdPExample(mu: Double){
     //File("data(${mu}).csv ").writeText(writingText)
 }
 
-fun rk2VdPAlternateExample(p: Double)
+fun mk22VdPAlternateExample(p: Double)
 {
     val builder = StringBuilder()
-    val solver = MK22Integrator(100,20, 2.0, 0.001)
+    val solver = MK22Integrator(
+        100,
+        20,
+        2.0,
+        0.01,
+        0.0,
+        Double.POSITIVE_INFINITY)
+
     solver.addStepHandler { t, y ->  builder.appendln("${t};${y[0]};${y[1]}");}
     solver.enableEvaluationCountCheck(20000)
     builder.appendln("t;y1;y2")

@@ -5,33 +5,32 @@ import smallBossMathLib.implicitDifferentialEquations.MK22Integrator
 import java.io.File
 import kotlin.math.*
 
+private const val C = 1.6e-8
+private const val Cs = 2e-12
+private const val Cp = 10e-8
+private const val Lh = 4.45
+private const val Ls1 = 0.002
+private const val Ls2 = 5e-4
+private const val Ls3 = 5e-4
+private const val GAMMA = 40.67286402E-9
+private const val R = 25000.0
+private const val Rp = 50.0
+private const val Rg1 = 36.3
+private const val Rg2 = 17.3
+private const val Rg3 = 17.3
+private const val Ri = 50.0
+private const val Rc = 600.0
+private const val DELTA = 17.7493332
+
 private fun uIn1(t: Double) = 0.5 * sin(2000 * PI * t)
 private fun uIn2(t: Double) = 2.0 * sin(20000 * PI * t)
-private fun q(u:Double) : Double{
-    val gamma = 40.67286402e-9
-    val delta = 17.7493332
-    return gamma * (E.pow(delta*u) - 1.0)
-}
+private fun q(u:Double) : Double = GAMMA * (E.pow(DELTA*u) - 1.0)
+
 private fun mainFunction(t: Double, i: DoubleArray, o: DoubleArray){
-    val C = 1.6e-8
-    val Cs = 2e-12
-    val Cp = 10e-8
-    val Lh = 4.45
-    val Ls1 = 0.002
-    val Ls2 = 5e-4
-    val Ls3 = 5e-4
-    val R = 25000.0
-    val Rp = 50.0
-    val Rg1 = 36.3
-    val Rg2 = 17.3
-    val Rg3 = 17.3
-    val Ri = 50.0
-    val Rc = 600.0
     val Ud1 = i[2]-i[4]-i[6]-uIn2(t)
     val Ud2 = -i[3]+i[5]-i[6]- uIn2(t)
     val Ud3 = i[3]+i[4]+i[6]+ uIn2(t)
     val Ud4 = -i[2]-i[5]+i[6]+ uIn2(t)
-
 
     o[0] = (1.0/C) * (i[7]-0.5*i[9]+0.5*i[10]+i[13]-(1.0/R)*i[0])
     o[1] = (1.0/C)*(i[8]-0.5*i[11]+0.5*i[12]+i[14]-(1.0/R)*i[1])
@@ -51,7 +50,7 @@ private fun mainFunction(t: Double, i: DoubleArray, o: DoubleArray){
 }
 
 fun ringModulatorRK2Example(){
-    val integrator = StabilityControlSecondOrderIntegrator( 10000, 0.000001)
+    val integrator = StabilityControlSecondOrderIntegrator( 10000, 0.01)
     val builder = StringBuilder()
     val output = DoubleArray(15) {0.0}
 
@@ -69,10 +68,16 @@ fun ringModulatorRK2Example(){
 }
 
 fun ringModulatorMK22Example(){
-    val integrator = MK22Integrator(10000, 20, 2.0, 0.000001)
-    //val integrator = StabilityControlSecondOrderIntegrator( 10000, 0.000001)
+    val integrator = MK22Integrator(
+        100,
+        20,
+        2.0,
+        0.0001,
+        0.0,
+        Double.MAX_VALUE)
+
     val builder = StringBuilder()
-    val output = DoubleArray(15) {0.0}
+    val output = DoubleArray(15)
 
     integrator.addStepHandler(){
             t, y -> builder.append("${t};${y[13]} \n")

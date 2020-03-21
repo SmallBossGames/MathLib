@@ -4,12 +4,12 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.sqrt
 
-const val rMin = 1e-14
+private const val rMin = 1e-14
 
-inline fun findJacobiMatrix(inY:DoubleArray,
-                     t: Double,
-                     equations: (t: Double, inY: DoubleArray, outF: DoubleArray) -> Unit,
-                     outJacobiMatrix: Matrix2D) {
+fun findJacobiMatrix(inY:DoubleArray,
+                            t: Double,
+                            equations: (t: Double, inY: DoubleArray, outF: DoubleArray) -> Unit,
+                            outJacobiMatrix: Matrix2D) {
     val tempY = inY.clone()
     val tempF = DoubleArray(tempY.size)
     val tempFWithDelta = DoubleArray(tempY.size)

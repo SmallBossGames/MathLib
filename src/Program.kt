@@ -3,10 +3,8 @@ import org.apache.commons.math3.analysis.differentiation.UnivariateDifferentiabl
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations
 import smallBossMathLib.explicitDifferentialEquations.StabilityControlFourthOrderIntegrator
 import smallBossMathLib.explicitDifferentialEquations.StabilityControlSecondOrderIntegrator
-import smallBossMathLib.examples.rungeKuttaSecondOrderExample
 import smallBossMathLib.examples.*
 import java.io.File
-import kotlin.math.pow
 
 class MyFunction:UnivariateDifferentiableFunction{
     override fun value(t: DerivativeStructure?): DerivativeStructure {
@@ -61,11 +59,16 @@ fun main() {
 
     //luTest()
 
-    //mk22VdPExample(6.0)
+
     //rk2VdPExample(6.0)
-    rk2VdPAlternateExample(3.0e-2)
+
 
     //ringModulatorMK22Example()
+    mk22VdPExample(6.0)
+    //mk22Other2Test()
+    //mk22Other3Test()
+    //mk22VdPAlternateExample(3.0e-2)
+    //mk22VdPAlternateExample(3.0e-6)
 }
 
 fun testRungeKuttaSecondOrder(mu: Double)
