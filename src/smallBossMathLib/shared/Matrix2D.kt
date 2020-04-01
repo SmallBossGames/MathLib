@@ -1,5 +1,7 @@
 package smallBossMathLib.shared
 
+import kotlin.math.abs
+
 class Matrix2D(val size: Int) {
     companion object{
         @JvmStatic
@@ -14,13 +16,14 @@ class Matrix2D(val size: Int) {
         }
     }
 
-    val innerArray = Array(size) {DoubleArray(size)}
+    val columns = Array(size) {DoubleArray(size)}
+    private val transpositionVector = IntArray(size)
 
-    inline val indices get() = innerArray.indices
+    inline val indices get() = columns.indices
 
-    operator fun get(x: Int, y: Int) = innerArray[y][x]
+    operator fun get(x: Int, y: Int) = columns[y][x]
     operator fun set(x: Int, y: Int, value: Double) {
-        innerArray[y][x] = value
+        columns[y][x] = value
     }
 
     operator fun plusAssign(other: Matrix2D){
@@ -48,7 +51,26 @@ class Matrix2D(val size: Int) {
     }
 
     fun makeLU(){
+        for (i in transpositionVector.indices)
+            transpositionVector[i] = i
+
         for (p in 0 until size) {
+            var maxIndex = p
+            for (i in p+1 until size)
+                if(abs(this[i, p]) > abs(this[maxIndex, p]))
+                    maxIndex = i
+
+            if(p != maxIndex){
+                val temp = transpositionVector[p]
+                transpositionVector[p] = transpositionVector[maxIndex]
+                transpositionVector[maxIndex] = temp
+                for (i in 0 until size){
+                    val temp1 = this[p, i]
+                    this[p, i] = this[maxIndex, i]
+                    this[maxIndex, i] = temp1
+                }
+            }
+
             for (r in (p+1) until size){
                 val m = this[r, p] / this[p, p]
                 this[r, p] = m
@@ -77,9 +99,14 @@ class Matrix2D(val size: Int) {
             throw IllegalArgumentException()
         }
 
+        val temp = DoubleArray(outResultVector.size)
+
         for (i in rightPart.indices){
-            outResultVector[i] = rightPart[i]
+            temp[i] = rightPart[transpositionVector[i]]
         }
+
+        for (i in rightPart.indices)
+            outResultVector[i] = temp[i]
 
         for (i in indices){
             val temp = outResultVector[i]
@@ -116,7 +143,7 @@ class Matrix2D(val size: Int) {
             }
         }
 
-        for (col in outInverseMatrix.innerArray){
+        for (col in outInverseMatrix.columns){
             solveLU(col, col)
         }
     }

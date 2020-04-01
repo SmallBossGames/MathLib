@@ -70,8 +70,8 @@ fun ringModulatorRK2Example(){
 fun ringModulatorMK22Example(){
     val integrator = MK22Integrator(
         100,
-        20,
-        2.0,
+        0,
+        0.0,
         0.0001,
         0.0,
         Double.MAX_VALUE)

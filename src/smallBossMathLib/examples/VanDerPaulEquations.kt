@@ -28,14 +28,14 @@ fun mk22VdPExample(mu: Double){
     val builder = StringBuilder()
     val solverRK2 = MK22Integrator(
         100,
-        20,
-        2.0,
+        0,
+        0.0,
         0.001,
         0.0,
         Double.POSITIVE_INFINITY)
 
     solverRK2.addStepHandler { t, y ->  builder.append("${y[0]};${y[1]} \n");}
-    solverRK2.enableEvaluationCountCheck(2000)
+    //solverRK2.enableEvaluationCountCheck(2000)
 
     val output = doubleArrayOf(-2.0, 0.0)
 
@@ -77,10 +77,10 @@ fun mk22VdPAlternateExample(p: Double)
 {
     val builder = StringBuilder()
     val solver = MK22Integrator(
-        100,
-        20,
-        2.0,
-        0.01,
+        10000,
+        0,
+        0.0,
+        0.001,
         0.0,
         Double.POSITIVE_INFINITY)
 
