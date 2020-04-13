@@ -20,7 +20,7 @@ fun mk22Other2Test(){
     val output = doubleArrayOf(1.0, 0.0, 0.0)
 
     solverRK2.integrate(0.0, output,100.0, output)
-    { t: Double, inY: DoubleArray, outY: DoubleArray ->
+    { inY: DoubleArray, outY: DoubleArray ->
         outY[0] = -0.04*inY[0]+0.01*inY[1]*inY[2]
         outY[1] = 400*inY[0]-100*inY[1]*inY[2]-3000.0* inY[1].pow(2.0)
         outY[2] = 30.0*inY[1].pow(2)
@@ -47,7 +47,7 @@ fun mk22Other3Test(){
     val output = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
 
     solverRK2.integrate(0.0, doubleArrayOf(1.0, 1.0, 0.0, 0.0),100.0, output)
-    { t: Double, i: DoubleArray, o: DoubleArray ->
+    { i: DoubleArray, o: DoubleArray ->
         o[0] = i[2]-100.0*i[0]*i[1]
         o[1] = i[2]-2.0*i[3]-100.0*i[0]*i[1]-20000.0*i[1].pow(2)
         o[2] = -i[2]+100.0*i[0]*i[1]

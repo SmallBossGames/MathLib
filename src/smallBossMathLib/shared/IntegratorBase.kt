@@ -1,12 +1,19 @@
 package smallBossMathLib.shared
 
-import smallBossMathLib.differentialEquations.IFirstOrderIntegrator
+import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
+import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 
 abstract class IntegratorBase {
-    var isEvaluationControlEnabled: Boolean = false
+    var isStepCountLimitEnabled: Boolean = false
         private set
 
-    var maxEvaluationCount: Int = 0
+    var isEvaluationsCountLimitEnabled: Boolean = false
+        private set 
+
+    var maxStepCount: Int = 0
+        private set
+    
+    var maxEvaluationsCount: Int = 0
         private set
 
     private val stepHandlers = HashSet<(t: Double, y: DoubleArray) -> Unit>()
@@ -29,16 +36,43 @@ abstract class IntegratorBase {
     }
 
     //Evaluation control
-    fun enableEvaluationCountCheck(maxEvaluations: Int){
-        isEvaluationControlEnabled = true
-        maxEvaluationCount = maxEvaluations
+    fun enableStepCountLimit(maxSteps: Int){
+        isStepCountLimitEnabled = true
+        maxStepCount = maxSteps
     }
 
-    fun disableEvaluationCountCheck(){
-        isEvaluationControlEnabled = false
-        maxEvaluationCount = 0
+    fun disableStepCountLimit(){
+        isStepCountLimitEnabled = false
+        maxStepCount = 0
     }
 
-    protected fun isNextEvaluationAllow(evaluations: Int) : Boolean =
-        !isEvaluationControlEnabled || evaluations < maxEvaluationCount
+    @Throws(ExceedingLimitStepsException::class)
+    fun checkStepCount(steps: Int){
+        if(isStepCountLimitEnabled && steps >= maxStepCount){
+            throw ExceedingLimitStepsException()
+        }
+    }
+
+    //Right part evaluations control
+
+    fun enableEvaluationsCountLimit(maxEvaluations: Int){
+        isStepCountLimitEnabled = true
+        maxStepCount = maxEvaluations
+    }
+
+    fun disableEvaluationsCountLimit(){
+        isStepCountLimitEnabled = false
+        maxStepCount = 0
+    }
+
+    @Throws(ExceedingLimitEvaluationsException::class)
+    fun checkEvaluationCount(evaluations: Int){
+        if(isEvaluationsCountLimitEnabled && evaluations >= maxEvaluationsCount) {
+            throw ExceedingLimitEvaluationsException()
+        }
+    }
+
+    /*protected fun isNextStepAllowed(steps: Int, evaluations: Int) : Boolean =
+        (!isStepCountLimitEnabled || steps < maxStepCount) &&
+                (!isEvaluationsCountLimitEnabled || evaluations < maxEvaluationsCount)*/
 }

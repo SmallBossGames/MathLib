@@ -1,13 +1,12 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.differentialEquations.IFirstOrderIntegrator
 import smallBossMathLib.shared.IntegratorBase
 import kotlin.math.*
 
-class StabilityControlSecondOrderIntegrator(override val evaluations: Int, override val accuracy: Double)
-    : IntegratorBase(), IFirstOrderIntegrator
+class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
+    : IntegratorBase()
 {
-    override fun integrate(
+    fun integrate(
         t0: Double,
         y0: DoubleArray,
         t: Double,
@@ -33,7 +32,7 @@ class StabilityControlSecondOrderIntegrator(override val evaluations: Int, overr
 
         equations(time, outY, fLastBuffer)
 
-        while (time < t0 + t && isNextEvaluationAllow(currentEvaluationsCount)) {
+        while (time < t0 + t) {
             for (i in fLastBuffer.indices) {
                 k1Buffer[i] = step * fLastBuffer[i]
                 yNextBuffer[i] = outY[i] + 2.0 / 3.0 * k1Buffer[i]

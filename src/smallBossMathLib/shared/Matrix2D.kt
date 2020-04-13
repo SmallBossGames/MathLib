@@ -93,6 +93,14 @@ class Matrix2D(val size: Int) {
         }
     }
 
+    fun multiply(matrix: Matrix2D, outMatrix: Matrix2D){
+        for (i in matrix.indices){
+            val outColumn = outMatrix.columns[i]
+            val column = matrix.columns[i]
+            multiply(column, outColumn)
+        }
+    }
+
     @Throws(IllegalArgumentException::class)
     fun solveLU(rightPart: DoubleArray, outResultVector: DoubleArray){
         if(rightPart.size != size || outResultVector.size != size) {

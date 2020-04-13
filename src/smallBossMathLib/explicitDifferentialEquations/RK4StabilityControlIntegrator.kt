@@ -4,12 +4,12 @@ import smallBossMathLib.differentialEquations.IFirstOrderIntegrator
 import smallBossMathLib.shared.IntegratorBase
 import kotlin.math.*
 
-class StabilityControlFourthOrderIntegrator(
-    override val evaluations: Int,
-    override val accuracy: Double
-) : IntegratorBase(), IFirstOrderIntegrator{
+class RK4StabilityControlIntegrator(
+    val evaluations: Int,
+    val accuracy: Double
+) : IntegratorBase() {
 
-    override fun integrate(
+    fun integrate(
         t0: Double,
         y0: DoubleArray,
         t: Double,

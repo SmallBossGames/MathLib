@@ -1,8 +1,8 @@
 import org.apache.commons.math3.analysis.differentiation.DerivativeStructure
 import org.apache.commons.math3.analysis.differentiation.UnivariateDifferentiableFunction
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations
-import smallBossMathLib.explicitDifferentialEquations.StabilityControlFourthOrderIntegrator
-import smallBossMathLib.explicitDifferentialEquations.StabilityControlSecondOrderIntegrator
+import smallBossMathLib.explicitDifferentialEquations.RK4StabilityControlIntegrator
+import smallBossMathLib.explicitDifferentialEquations.RK23StabilityControlIntegrator
 import smallBossMathLib.examples.*
 import java.io.File
 
@@ -68,16 +68,18 @@ fun main() {
     //mk22Other2Test()
     //mk22Other3Test()
 
-    mk22VdPAlternateExample(3.0e-6)
-    mk22VdPAlternateExample(3.0e-5)
-    mk22VdPAlternateExample(3.0e-4)
+    //mk22VdPAlternateExample(3.0e-6)
+    //mk22VdPAlternateExample(3.0e-5)
+   // mk22VdPAlternateExample(3.0e-4)
     mk22VdPAlternateExample(3.0e-3)
+    mk22VdPAlternateExample(0.75e-2)
+    mk22VdPAlternateExample(1.5e-2)
     mk22VdPAlternateExample(3.0e-2)
 }
 
 fun testRungeKuttaSecondOrder(mu: Double)
 {
-    val solverRK2 = StabilityControlSecondOrderIntegrator(100, 0.01)
+    val solverRK2 = RK23StabilityControlIntegrator(100, 0.01)
 
     for(i in 0..400)
     {
@@ -96,7 +98,7 @@ fun testRungeKuttaSecondOrder(mu: Double)
 fun testRungeKuttaWithStepHandlerSecondOrder(mu: Double)
 {
     val builder = StringBuilder()
-    val solverRK2 = StabilityControlSecondOrderIntegrator(100,0.01)
+    val solverRK2 = RK23StabilityControlIntegrator(100,0.01)
     solverRK2.addStepHandler { t, y ->  builder.append("${y[0]};${y[1]} \n");}
     //solverRK2.enableEvaluationCountCheck(2000)
 
@@ -116,7 +118,7 @@ fun testRungeKuttaWithStepHandlerSecondOrder(mu: Double)
 fun testRungeKuttaWithStepHandlerFourthOrder(mu: Double)
 {
     val builder = StringBuilder()
-    val solverRK4 = StabilityControlFourthOrderIntegrator( 100,0.01)
+    val solverRK4 = RK4StabilityControlIntegrator( 100,0.01)
     solverRK4.addStepHandler { _, y ->  builder.append("${y[0]};${y[1]} \n");}
 
     val output = doubleArrayOf(-2.0, 0.0)

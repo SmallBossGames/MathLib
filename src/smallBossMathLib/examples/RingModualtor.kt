@@ -1,6 +1,6 @@
 package smallBossMathLib.examples
 
-import smallBossMathLib.explicitDifferentialEquations.StabilityControlSecondOrderIntegrator
+import smallBossMathLib.explicitDifferentialEquations.RK23StabilityControlIntegrator
 import smallBossMathLib.implicitDifferentialEquations.MK22Integrator
 import java.io.File
 import kotlin.math.*
@@ -26,7 +26,32 @@ private fun uIn1(t: Double) = 0.5 * sin(2000 * PI * t)
 private fun uIn2(t: Double) = 2.0 * sin(20000 * PI * t)
 private fun q(u:Double) : Double = GAMMA * (E.pow(DELTA*u) - 1.0)
 
-private fun mainFunction(t: Double, i: DoubleArray, o: DoubleArray){
+private fun mainFunction(i: DoubleArray, o: DoubleArray){
+    val t = i[15]
+    val Ud1 = i[2]-i[4]-i[6]-uIn2(t)
+    val Ud2 = -i[3]+i[5]-i[6]- uIn2(t)
+    val Ud3 = i[3]+i[4]+i[6]+ uIn2(t)
+    val Ud4 = -i[2]-i[5]+i[6]+ uIn2(t)
+
+    o[0] = (1.0/C) * (i[7]-0.5*i[9]+0.5*i[10]+i[13]-(1.0/R)*i[0])
+    o[1] = (1.0/C)*(i[8]-0.5*i[11]+0.5*i[12]+i[14]-(1.0/R)*i[1])
+    o[2] = (1.0/Cs)*(i[9]-q(Ud1)+q(Ud4))
+    o[3] = (1.0/Cs)*(-i[10]+q(Ud2)-q(Ud3))
+    o[4] = (1.0/Cs)*(i[11]+q(Ud1)+q(Ud3))
+    o[5] = (1.0/Cs)*(i[12]+q(Ud2)+q(Ud4))
+    o[6] = (1.0/Cp)*(-(1.0/Rp)*i[6]+q(Ud1)+q(Ud2)-q(Ud3)-q(Ud4))
+    o[7] = -(1.0/Lh)*i[0]
+    o[8] = -(1.0/Lh)*i[1]
+    o[9] = (1.0/Ls2)*(0.5*i[0]-i[2]-Rg2*i[9])
+    o[10] = (1.0/Ls3)*(-0.5*i[0]-i[3]-Rg3*i[10])
+    o[11] = (1.0/Ls2)*(0.5*i[1]-i[4]-Rg2*i[11])
+    o[12] = (1.0/Ls3)*(-0.5*i[1]-i[5]-Rg3*i[12])
+    o[13] = (1.0/Ls1)*(-i[0]+uIn1(t)-(Ri+Rg1)*i[13])
+    o[14] = (1.0/Ls1)*(-i[1]-(Rc+Rg1)*i[14])
+    o[15] = 1.0
+}
+
+private fun mainFunction2(t: Double, i: DoubleArray, o: DoubleArray){
     val Ud1 = i[2]-i[4]-i[6]-uIn2(t)
     val Ud2 = -i[3]+i[5]-i[6]- uIn2(t)
     val Ud3 = i[3]+i[4]+i[6]+ uIn2(t)
@@ -50,7 +75,7 @@ private fun mainFunction(t: Double, i: DoubleArray, o: DoubleArray){
 }
 
 fun ringModulatorRK2Example(){
-    val integrator = StabilityControlSecondOrderIntegrator( 10000, 0.01)
+    val integrator = RK23StabilityControlIntegrator( 10000, 0.01)
     val builder = StringBuilder()
     val output = DoubleArray(15) {0.0}
 
@@ -58,9 +83,9 @@ fun ringModulatorRK2Example(){
         t, y -> builder.append("${t};${y[13]} \n")
     }
 
-    integrator.enableEvaluationCountCheck(20000)
+    integrator.enableStepCountLimit(20000)
 
-    integrator.integrate(0.0, output, 0.001, output, ::mainFunction)
+    integrator.integrate(0.0, output, 0.001, output, ::mainFunction2)
 
     val writingText = builder.replace(Regex("[.]"), ",")
 
@@ -77,13 +102,13 @@ fun ringModulatorMK22Example(){
         Double.MAX_VALUE)
 
     val builder = StringBuilder()
-    val output = DoubleArray(15)
+    val output = DoubleArray(16)
 
     integrator.addStepHandler(){
-            t, y -> builder.append("${t};${y[13]} \n")
+            t, y -> builder.append("${t};${y[15]};${y[13]} \n")
     }
 
-    integrator.enableEvaluationCountCheck(20000)
+    integrator.enableStepCountLimit(20000)
 
     integrator.integrate(0.0, output, 0.001, output, ::mainFunction)
 

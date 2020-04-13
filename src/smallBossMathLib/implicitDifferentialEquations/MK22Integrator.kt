@@ -1,13 +1,9 @@
 package smallBossMathLib.implicitDifferentialEquations
 
+import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
+import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 import smallBossMathLib.shared.*
 import kotlin.math.*
-
-/*const val a = 0.29289321881
-const val p1 = 5.0/4.0
-const val p2 = 3.0/4.0
-const val beta = 2.0/3.0
-const val alpha = -4.0/3.0*/
 
 const val a = 0.29289321881
 const val p1 = 0.29289321881
@@ -17,18 +13,20 @@ const val alpha = -2*a
 
 const val v = 1e-7
 
-class MK22Integrator (val evaluations: Int,
+class MK22Integrator (val startEvaluationCount: Int,
                       val freezeJacobiSteps: Int,
                       val stepSizeCoefficient: Double,
                       val accuracy: Double,
                       val minStep: Double,
                       val maxStep: Double) : IntegratorBase() {
+
+    @Throws(ExceedingLimitStepsException::class, ExceedingLimitEvaluationsException::class)
     fun integrate(
         t0: Double,
         y0: DoubleArray,
         t: Double,
         outY: DoubleArray,
-        equations: (t: Double, inY: DoubleArray, outF: DoubleArray) -> Unit) {
+        equations: (inY: DoubleArray, outF: DoubleArray) -> Unit) : ImplicitIntegratorResult {
 
         if (y0.size != outY.size)
             throw IllegalArgumentException()
@@ -47,72 +45,78 @@ class MK22Integrator (val evaluations: Int,
         val matrixBuffer = Matrix2D(y0.size)
         val dMatrix = Matrix2D(y0.size)
         val jacobiMatrix = Matrix2D(y0.size)
-        val guessMatrix = Matrix2D(y0.size)
 
-        var step = t / evaluations
+        var step = t / startEvaluationCount
         var time = t0
         var freezeStepsCount = 0
         var isNeedFindJacobi = true
-        var currentEvaluationsCount = 0
 
+        var stepsCount = 0
+        var evaluationsCount = 0
+        var jacobiEvaluationsCount = 0
+        var returnsCount = 0
 
-        while (time < endTime && isNextEvaluationAllow(currentEvaluationsCount)){
+        while (time < endTime){
+            checkStepCount(stepsCount)
             if(freezeStepsCount == 0 && isNeedFindJacobi) {
-                    equations(time, outY, vectorBuffer2)
-                    outY.copyInto(vectorBuffer1)
-                    for (i in vectorBuffer1.indices){
-                        val r = max(1e-14, 1e-7*abs(outY[i]))
-                        val jacobiColumn = jacobiMatrix.columns[i]
-                        val guessColumn = guessMatrix.columns[i]
-                        vectorBuffer1[i] += r
-                        equations(time, vectorBuffer1, jacobiColumn)
-                        vectorBuffer1[i] += r
-                        equations(time, vectorBuffer1, guessColumn)
-                        for (j in vectorBuffer1.indices){
-                            val jacobiValue1 = (jacobiColumn[j] - vectorBuffer2[j]) / r
-                            val jacobiValue2 = (guessColumn[j] - jacobiColumn[j]) / r
-                            val guessValue = 0.5 * (r / step) * (jacobiValue2 - jacobiValue1) / r
-                            jacobiColumn[j] = jacobiValue1
-                            guessColumn[j] = guessValue
-                        }
-                        vectorBuffer1[i] = outY[i]
+                checkEvaluationCount(evaluationsCount)
+                equations(outY, vectorBuffer2)
+                evaluationsCount++
+                outY.copyInto(vectorBuffer1)
+                for (i in vectorBuffer1.indices){
+                    val r = max(1e-14, 1e-7*abs(outY[i]))
+                    val jacobiColumn = jacobiMatrix.columns[i]
+                    vectorBuffer1[i] += r
+                    checkEvaluationCount(evaluationsCount)
+                    equations(vectorBuffer1, jacobiColumn)
+                    evaluationsCount++
+                    for (j in jacobiColumn.indices){
+                        jacobiColumn[j] = (jacobiColumn[j] - vectorBuffer2[j]) / r
                     }
+                    vectorBuffer1[i] = outY[i]
+                }
+                jacobiEvaluationsCount++
             } else {
                 isNeedFindJacobi = true
             }
 
             for (i in dMatrix.indices)
                 for(j in dMatrix.indices)
-                    dMatrix[i, j] = (if (i == j) 1.0 else 0.0) - a*step*(jacobiMatrix[i,j] + step * guessMatrix[i,j])
+                    dMatrix[i, j] = (if (i == j) 1.0 else 0.0) - a*step*(jacobiMatrix[i,j])
 
             dMatrix.makeLU()
 
             for (i in vectorBuffer1.indices){
                 vectorBuffer1[i] = outY[i]
             }
-            equations(time, vectorBuffer1, vectorBuffer2)
+            checkEvaluationCount(evaluationsCount)
+            equations(vectorBuffer1, vectorBuffer2)
+            evaluationsCount++
             for (i in vectorBuffer2.indices){
                 vectorBuffer2[i] = step*vectorBuffer2[i]
             }
             dMatrix.solveLU(vectorBuffer2, k1)
-
             for (i in vectorBuffer1.indices){
                 vectorBuffer1[i] = outY[i] + beta*k1[i]
             }
-            equations(time, vectorBuffer1, vectorBuffer2)
+            checkEvaluationCount(evaluationsCount)
+            equations(vectorBuffer1, vectorBuffer2)
+            evaluationsCount++
             for (i in vectorBuffer2.indices){
                 vectorBuffer2[i] = step*vectorBuffer2[i] + alpha*k1[i]
             }
             dMatrix.solveLU(vectorBuffer2, k2)
 
-            var e1 = 0.0
-            for (i in dMatrix.indices){
-                val temp = k2[i] + (2*a-1.0)*k1[i]
-                vectorBuffer1[i] = temp
-                e1 = max(abs(temp) / (abs(outY[i]) + v), e1)
+            for (i in vectorBuffer1.indices){
+                vectorBuffer1[i] = k2[i] + (2*a-1.0)*k1[i]
             }
 
-            val q1 = sqrt(accuracy / e1)
+            var e1 = 0.0
+            for (i in vectorBuffer1.indices){
+                e1 = max(abs(vectorBuffer1[i]) / (abs(outY[i]) + v), e1)
+            }
+
+            val q1 = sqrt(accuracy*(abs(a-2*a*a)/abs(a - 1.0/3.0)) / e1)
 
             var e2 = 0.0
             val q2: Double
@@ -121,7 +125,7 @@ class MK22Integrator (val evaluations: Int,
                 matrixBuffer.multiply(vectorBuffer1, vectorBuffer2)
                 for (i in dMatrix.indices)
                     e2 = max(abs(vectorBuffer2[i]) / (abs(outY[i]) + v), e2)
-                q2 = sqrt(accuracy / e2)
+                q2 = sqrt(accuracy*(abs(a-2*a*a)/abs(a - 1.0/3.0)) / e2)
             } else {
                 e2 = e1
                 q2 = q1
@@ -136,6 +140,8 @@ class MK22Integrator (val evaluations: Int,
 
                 step = normalizeStep(step*q2, time, endTime)
 
+                returnsCount++
+
                 continue
             }
 
@@ -144,7 +150,7 @@ class MK22Integrator (val evaluations: Int,
             }
 
             time += step
-            currentEvaluationsCount++
+            stepsCount++
 
             executeStepHandlers(time, outY)
 
@@ -157,6 +163,10 @@ class MK22Integrator (val evaluations: Int,
                 freezeStepsCount = 0
             }
         }
+
+        val averageStep = t / stepsCount
+
+        return ImplicitIntegratorResult(stepsCount, averageStep, evaluationsCount, jacobiEvaluationsCount, returnsCount)
     }
 
     private fun normalizeStep(step: Double, t: Double, endT: Double) : Double{
