@@ -10,7 +10,7 @@ fun rungeKuttaSecondOrderExample(p: Double)
 {
     val builder = StringBuilder()
     val solverRK2 = RK23StabilityControlIntegrator(100,0.01)
-    solverRK2.addStepHandler { t, y ->  builder.append("${y[0]};${y[1]} \n");}
+    solverRK2.addStepHandler { info ->  builder.append("${info.yValue[0]};${info.yValue[1]} \n");}
     solverRK2.enableStepCountLimit(10000)
 
     val output = doubleArrayOf(2.0, 0.0)
@@ -32,14 +32,12 @@ fun mk22VdPExample(mu: Double)
         10000,
         0,
         0.0,
-        0.001,
-        0.0,
-        Double.POSITIVE_INFINITY)
+        0.001)
 
     File("VanDerPaul(mu = ${mu}).csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
-        solver.addStepHandler { t, y ->
-            val str = "${t};${y[0]};${y[1]}".replace('.', ',')
+        solver.addStepHandler { info ->
+            val str = "${info.time};${info.yValue[0]};${info.yValue[1]}".replace('.', ',')
             out.appendln(str);
         }
         solver.enableStepCountLimit(20000)
@@ -63,7 +61,7 @@ fun mk22VdPExample(mu: Double)
 fun rk2VdPExample(mu: Double){
     val builder = StringBuilder()
     val solverRK2 = RK23StabilityControlIntegrator(100,0.001)
-    solverRK2.addStepHandler { t, y ->  builder.append("${y[0]};${y[1]} \n");}
+    solverRK2.addStepHandler { info ->  builder.append("${info.yValue[0]};${info.yValue[1]} \n");}
     solverRK2.enableStepCountLimit(2000)
 
     val output = doubleArrayOf(-2.0, 0.0)
@@ -87,14 +85,12 @@ fun mk22VdPAlternateExample(p: Double)
         10000,
         0,
         0.0,
-        0.01,
-        0.0,
-        Double.POSITIVE_INFINITY)
+        0.01)
 
     File("VanDerPaul(p = ${p}).csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
-        solver.addStepHandler { t, y ->
-            val str = "${t};${y[0]};${y[1]}".replace('.', ',')
+        solver.addStepHandler { info ->
+            val str = "${info.time};${info.yValue[0]};${info.yValue[1]}".replace('.', ',')
             out.appendln(str);
         }
         solver.enableStepCountLimit(20000)

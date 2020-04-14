@@ -99,7 +99,7 @@ fun testRungeKuttaWithStepHandlerSecondOrder(mu: Double)
 {
     val builder = StringBuilder()
     val solverRK2 = RK23StabilityControlIntegrator(100,0.01)
-    solverRK2.addStepHandler { t, y ->  builder.append("${y[0]};${y[1]} \n");}
+    solverRK2.addStepHandler { info ->  builder.append("${info.yValue[0]};${info.yValue[1]} \n");}
     //solverRK2.enableEvaluationCountCheck(2000)
 
     val output = doubleArrayOf(-2.0, 0.0)
@@ -119,7 +119,7 @@ fun testRungeKuttaWithStepHandlerFourthOrder(mu: Double)
 {
     val builder = StringBuilder()
     val solverRK4 = RK4StabilityControlIntegrator( 100,0.01)
-    solverRK4.addStepHandler { _, y ->  builder.append("${y[0]};${y[1]} \n");}
+    solverRK4.addStepHandler { info ->  builder.append("${info.yValue[0]};${info.yValue[1]} \n");}
 
     val output = doubleArrayOf(-2.0, 0.0)
 

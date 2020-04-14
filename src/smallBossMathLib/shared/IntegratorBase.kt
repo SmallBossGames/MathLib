@@ -8,7 +8,13 @@ abstract class IntegratorBase {
         private set
 
     var isEvaluationsCountLimitEnabled: Boolean = false
-        private set 
+        private set
+
+    var isMinStepControlEnabled: Boolean = false
+        private set
+
+    var isMaxStepControlEnabled: Boolean =  false
+        private set
 
     var maxStepCount: Int = 0
         private set
@@ -16,13 +22,19 @@ abstract class IntegratorBase {
     var maxEvaluationsCount: Int = 0
         private set
 
-    private val stepHandlers = HashSet<(t: Double, y: DoubleArray) -> Unit>()
+    var maxStepValue = 0.0
+        private set
 
-    fun addStepHandler(handler: (t: Double, y: DoubleArray) -> Unit) {
+    var minStepValue = 0.0
+        private set
+
+    private val stepHandlers = HashSet<(info:StepInfo) -> Unit>()
+
+    fun addStepHandler(handler: (info:StepInfo) -> Unit) {
         stepHandlers += handler
     }
 
-    fun removeStepHandler(handler: (t: Double, y: DoubleArray) -> Unit) {
+    fun removeStepHandler(handler: (info:StepInfo) -> Unit) {
         stepHandlers -= handler
     }
 
@@ -30,9 +42,9 @@ abstract class IntegratorBase {
         stepHandlers.clear()
     }
 
-    protected fun executeStepHandlers(t: Double, y: DoubleArray) {
+    protected fun executeStepHandlers(info: StepInfo) {
         for (handler in stepHandlers)
-            handler(t, y)
+            handler(info)
     }
 
     //Evaluation control
@@ -65,6 +77,40 @@ abstract class IntegratorBase {
         maxStepCount = 0
     }
 
+    fun enableHighStepLimit(max: Double){
+        isMaxStepControlEnabled = true
+        maxStepValue = max
+    }
+
+    fun enableLowStepLimit(min: Double){
+        isMinStepControlEnabled = true
+        minStepValue = min
+    }
+
+    fun enableStepLimits(min: Double, max: Double){
+        isMinStepControlEnabled = true
+        isMaxStepControlEnabled = true
+        minStepValue = min
+        maxStepValue = max
+    }
+
+    fun disableHighStepLimit(){
+        isMaxStepControlEnabled = false
+    }
+
+    fun disableLowStepLimit(){
+        isMinStepControlEnabled = false
+    }
+
+    fun disableStepLimits(){
+        isMinStepControlEnabled = false
+        isMaxStepControlEnabled = false
+    }
+
+    fun isLowStepSizeReached(step: Double) = isMinStepControlEnabled && step < minStepValue
+
+    fun isHighStepSizeReached(step: Double) = isMinStepControlEnabled && step > minStepValue
+
     @Throws(ExceedingLimitEvaluationsException::class)
     fun checkEvaluationCount(evaluations: Int){
         if(isEvaluationsCountLimitEnabled && evaluations >= maxEvaluationsCount) {
@@ -72,7 +118,12 @@ abstract class IntegratorBase {
         }
     }
 
-    /*protected fun isNextStepAllowed(steps: Int, evaluations: Int) : Boolean =
-        (!isStepCountLimitEnabled || steps < maxStepCount) &&
-                (!isEvaluationsCountLimitEnabled || evaluations < maxEvaluationsCount)*/
+    protected fun normalizeStep(step: Double, t: Double, endT: Double) : Double{
+        val maxByLimit = if (t + step > endT) endT - t else step
+        return when {
+            isMinStepControlEnabled && maxByLimit < minStepValue -> minStepValue
+            isMaxStepControlEnabled && maxByLimit > maxStepValue -> maxStepValue
+            else -> maxByLimit
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package smallBossMathLib.explicitDifferentialEquations
 
 import smallBossMathLib.shared.IntegratorBase
+import smallBossMathLib.shared.StepInfo
 import kotlin.math.*
 
 class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
@@ -13,8 +14,6 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
         outY: DoubleArray,
         equations: (t: Double, inY: DoubleArray, outY: DoubleArray) -> Unit
     ) {
-        executeStepHandlers(t0, y0)
-
         y0.copyInto(outY)
 
         var fCurrentBuffer = DoubleArray(y0.size)
@@ -29,6 +28,10 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
         var time = t0
         var step = t / evaluations
+
+        val stepInfo = StepInfo(t0, y0, isLowStepSizeReached(step), isHighStepSizeReached(step))
+
+        executeStepHandlers(stepInfo)
 
         equations(time, outY, fLastBuffer)
 
@@ -86,7 +89,9 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
                 outY[i] = yNextBuffer[i]
             }
 
-            executeStepHandlers(time, outY)
+            stepInfo.set(time, outY, isLowStepSizeReached(step), isHighStepSizeReached(step))
+
+            executeStepHandlers(stepInfo)
 
             currentEvaluationsCount++
         }

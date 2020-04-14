@@ -2,6 +2,8 @@ package smallBossMathLib.examples
 
 import smallBossMathLib.explicitDifferentialEquations.RK23StabilityControlIntegrator
 import smallBossMathLib.implicitDifferentialEquations.MK22Integrator
+import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
+import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 import java.io.File
 import kotlin.math.*
 
@@ -24,7 +26,7 @@ private const val DELTA = 17.7493332
 
 private fun uIn1(t: Double) = 0.5 * sin(2000 * PI * t)
 private fun uIn2(t: Double) = 2.0 * sin(20000 * PI * t)
-private fun q(u:Double) : Double = GAMMA * (E.pow(DELTA*u) - 1.0)
+private fun q(u:Double) : Double = GAMMA * (exp(DELTA*u) - 1.0)
 
 private fun mainFunction(i: DoubleArray, o: DoubleArray){
     val t = i[15]
@@ -80,7 +82,7 @@ fun ringModulatorRK2Example(){
     val output = DoubleArray(15) {0.0}
 
     integrator.addStepHandler(){
-        t, y -> builder.append("${t};${y[13]} \n")
+        info -> builder.append("${info.time};${info.yValue[13]} \n")
     }
 
     integrator.enableStepCountLimit(20000)
@@ -97,22 +99,28 @@ fun ringModulatorMK22Example(){
         100,
         0,
         0.0,
-        0.0001,
-        0.0,
-        Double.MAX_VALUE)
+        0.0001)
 
-    val builder = StringBuilder()
-    val output = DoubleArray(16)
+    File("RingModulator.csv ").bufferedWriter().use { out ->
+        val output = DoubleArray(16)
 
-    integrator.addStepHandler(){
-            t, y -> builder.append("${t};${y[15]};${y[13]} \n")
+        out.appendln("t;timeFromIntegration;y14;isMinStepReached")
+        integrator.addStepHandler(){ info ->
+            val str = "${info.time};${info.yValue[15]};${info.yValue[13]};${info.isLowLimitReached}"
+                .replace('.',',')
+
+            out.appendln(str)
+        }
+
+        integrator.enableStepCountLimit(20000)
+        integrator.enableLowStepLimit(1e-30)
+
+        try {
+            integrator.integrate(0.0, output, 0.001, output, ::mainFunction)
+        } catch (ex: ExceedingLimitEvaluationsException){
+            println(ex.message)
+        } catch (ex: ExceedingLimitStepsException){
+            println(ex.message)
+        }
     }
-
-    integrator.enableStepCountLimit(20000)
-
-    integrator.integrate(0.0, output, 0.001, output, ::mainFunction)
-
-    val writingText = builder.replace(Regex("[.]"), ",")
-
-    File("data_modulator_test.csv ").writeText(writingText)
 }

@@ -16,7 +16,7 @@ class EulerIntegrator(val startEvaluations: Int,
         outY: DoubleArray,
         equations: (y: DoubleArray, f: DoubleArray) -> Unit
     ) {
-        executeStepHandlers(t0, y0)
+        //executeStepHandlers(t0, y0)
 
         y0.copyInto(outY)
 

@@ -16,9 +16,7 @@ const val v = 1e-7
 class MK22Integrator (val startEvaluationCount: Int,
                       val freezeJacobiSteps: Int,
                       val stepSizeCoefficient: Double,
-                      val accuracy: Double,
-                      val minStep: Double,
-                      val maxStep: Double) : IntegratorBase() {
+                      val accuracy: Double) : IntegratorBase() {
 
     @Throws(ExceedingLimitStepsException::class, ExceedingLimitEvaluationsException::class)
     fun integrate(
@@ -31,7 +29,7 @@ class MK22Integrator (val startEvaluationCount: Int,
         if (y0.size != outY.size)
             throw IllegalArgumentException()
 
-        executeStepHandlers(t0, y0)
+
 
         y0.copyInto(outY)
 
@@ -56,8 +54,18 @@ class MK22Integrator (val startEvaluationCount: Int,
         var jacobiEvaluationsCount = 0
         var returnsCount = 0
 
+        var isLowStepSizeReached = false
+        var isHighStepSizeReached = false
+
+        val stepInfo = StepInfo(t0, y0, isLowStepSizeReached, isHighStepSizeReached)
+
+        executeStepHandlers(stepInfo)
+
         while (time < endTime){
+            step = normalizeStep(step, time, endTime)
+
             checkStepCount(stepsCount)
+
             if(freezeStepsCount == 0 && isNeedFindJacobi) {
                 checkEvaluationCount(evaluationsCount)
                 equations(outY, vectorBuffer2)
@@ -111,34 +119,32 @@ class MK22Integrator (val startEvaluationCount: Int,
                 vectorBuffer1[i] = k2[i] + (2*a-1.0)*k1[i]
             }
 
-            var e1 = 0.0
-            for (i in vectorBuffer1.indices){
-                e1 = max(abs(vectorBuffer1[i]) / (abs(outY[i]) + v), e1)
-            }
-
+            val e1 = zeroSafetyNorm(vectorBuffer1, outY, v)
             val q1 = sqrt(accuracy*(abs(a-2*a*a)/abs(a - 1.0/3.0)) / e1)
 
-            var e2 = 0.0
+            val e2: Double
             val q2: Double
             if(q1 < 1.0){
                 dMatrix.inverseLU(matrixBuffer)
                 matrixBuffer.multiply(vectorBuffer1, vectorBuffer2)
-                for (i in dMatrix.indices)
-                    e2 = max(abs(vectorBuffer2[i]) / (abs(outY[i]) + v), e2)
+                e2 = zeroSafetyNorm(vectorBuffer2, outY, v)
                 q2 = sqrt(accuracy*(abs(a-2*a*a)/abs(a - 1.0/3.0)) / e2)
             } else {
                 e2 = e1
                 q2 = q1
             }
 
-            if (q2 < 1.0){
+            if (q2 < 1.0 && !isLowStepSizeReached && !isHighStepSizeReached){
                 if(freezeStepsCount == 0) {
                     isNeedFindJacobi = false
                 } else {
                     freezeStepsCount = 0
                 }
 
-                step = normalizeStep(step*q2, time, endTime)
+                step *= q2
+
+                isLowStepSizeReached = isLowStepSizeReached(step)
+                isHighStepSizeReached = isHighStepSizeReached(step)
 
                 returnsCount++
 
@@ -152,29 +158,24 @@ class MK22Integrator (val startEvaluationCount: Int,
             time += step
             stepsCount++
 
-            executeStepHandlers(time, outY)
+            stepInfo.set(time, outY, isLowStepSizeReached, isHighStepSizeReached)
+            executeStepHandlers(stepInfo)
 
-            val hNew = min(q1, q2)*step
+            val stepNew = min(q1, q2)*step
 
             freezeStepsCount++
 
-            if(!(freezeStepsCount < freezeJacobiSteps && hNew < step*stepSizeCoefficient && e1 <= e2)){
-                step = normalizeStep(hNew, time, endTime)
+            if(!(freezeStepsCount < freezeJacobiSteps && stepNew < step*stepSizeCoefficient && e1 <= e2)){
+                isLowStepSizeReached = isLowStepSizeReached(stepNew)
+                isHighStepSizeReached = isHighStepSizeReached(stepNew)
+
+                step = stepNew
                 freezeStepsCount = 0
             }
         }
 
-        val averageStep = t / stepsCount
+        val avgStep = t / stepsCount
 
-        return ImplicitIntegratorResult(stepsCount, averageStep, evaluationsCount, jacobiEvaluationsCount, returnsCount)
-    }
-
-    private fun normalizeStep(step: Double, t: Double, endT: Double) : Double{
-        val maxByLimit = if (t + step > endT) endT - t else step
-        return when {
-            maxByLimit < minStep -> minStep
-            maxByLimit > maxStep -> maxStep
-            else -> maxByLimit
-        }
+        return ImplicitIntegratorResult(stepsCount, avgStep, evaluationsCount, jacobiEvaluationsCount, returnsCount)
     }
 }
