@@ -87,7 +87,7 @@ fun ringModulatorRK2Example(){
 
     integrator.enableStepCountLimit(20000)
 
-    integrator.integrate(0.0, output, 0.001, output, ::mainFunction2)
+    integrator.integrate(0.0, output, 0.001, output, ::mainFunction)
 
     val writingText = builder.replace(Regex("[.]"), ",")
 

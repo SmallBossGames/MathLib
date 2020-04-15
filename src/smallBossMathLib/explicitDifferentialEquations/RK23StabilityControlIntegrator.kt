@@ -2,7 +2,20 @@ package smallBossMathLib.explicitDifferentialEquations
 
 import smallBossMathLib.shared.IntegratorBase
 import smallBossMathLib.shared.StepInfo
+import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.*
+
+const val g = 1.0 / 16.0
+const val alpha2 = 1.0/3.0
+const val beta21 = 1.0/3.0
+const val beta31 = 7.0/18.0
+const val beta32 = 7.0/18.0
+const val alpha3 = 7.0/9.0
+const val p1 = 1.0/7.0
+const val p2 = 3.0/8.0
+const val p3 = 27.0/56.0
+
+const val v = 1e-7
 
 class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
     : IntegratorBase()
@@ -12,7 +25,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
         y0: DoubleArray,
         t: Double,
         outY: DoubleArray,
-        equations: (t: Double, inY: DoubleArray, outY: DoubleArray) -> Unit
+        equations: (inY: DoubleArray, outY: DoubleArray) -> Unit
     ) {
         y0.copyInto(outY)
 
@@ -21,63 +34,84 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
         var currentEvaluationsCount = 0
 
         val yNextBuffer = DoubleArray(y0.size)
+        val vectorBuffer1 = DoubleArray(y0.size)
 
-        val k1Buffer = DoubleArray(y0.size)
-        val k2Buffer = DoubleArray(y0.size)
-        val k3Buffer = DoubleArray(y0.size)
+        val k1 = DoubleArray(y0.size)
+        val k2 = DoubleArray(y0.size)
+        val k3 = DoubleArray(y0.size)
 
         var time = t0
         var step = t / evaluations
+        var isLowStepSizeReached = isLowStepSizeReached(step)
+        var isHighStepSizeReached = isLowStepSizeReached(step)
 
-        val stepInfo = StepInfo(t0, y0, isLowStepSizeReached(step), isHighStepSizeReached(step))
+        val endTime = t0 + t
+
+        val stepInfo = StepInfo(t0, y0, isLowStepSizeReached, isHighStepSizeReached)
 
         executeStepHandlers(stepInfo)
+        equations(outY, fLastBuffer)
 
-        equations(time, outY, fLastBuffer)
+        while (time < endTime) {
+            step = normalizeStep(step, time, endTime)
 
-        while (time < t0 + t) {
             for (i in fLastBuffer.indices) {
-                k1Buffer[i] = step * fLastBuffer[i]
-                yNextBuffer[i] = outY[i] + 2.0 / 3.0 * k1Buffer[i]
+                k1[i] = step * fLastBuffer[i]
+                yNextBuffer[i] = outY[i] + beta21 * k1[i]
             }
 
-            equations(time, yNextBuffer, fCurrentBuffer)
+            equations(yNextBuffer, fCurrentBuffer)
 
             for (i in fCurrentBuffer.indices) {
-                k2Buffer[i] = step * fCurrentBuffer[i]
-                yNextBuffer[i] = outY[i] + 1.0 / 3.0 * k1Buffer[i] + 1.0 / 3.0 * k2Buffer[i]
+                k2[i] = step * fCurrentBuffer[i]
+                yNextBuffer[i] = outY[i] + beta31 * k1[i] + beta32 * k2[i]
             }
 
-            equations(time, yNextBuffer, fCurrentBuffer)
+            equations(yNextBuffer, fCurrentBuffer)
 
             for (i in fCurrentBuffer.indices) {
-                k3Buffer[i] = step * fCurrentBuffer[i]
-                yNextBuffer[i] = outY[i] + 1.0 / 4.0 * k1Buffer[i] + 15.0 / 32.0 * k2Buffer[i] + 9.0 / 32.0 * k3Buffer[i]
+                k3[i] = step * fCurrentBuffer[i]
+                yNextBuffer[i] = outY[i] + p1 * k1[i] + p2 * k2[i] + p3 * k3[i]
             }
             
-            val timeNext = step + time
-            equations(timeNext, yNextBuffer, fCurrentBuffer)
+            equations(yNextBuffer, fCurrentBuffer)
 
-            val q1 = findQ1(k1Buffer, k2Buffer, accuracy)
-            if (q1 < 1.0) {
-                step = min(t + t0 - time , q1 * step / 1.1)
+            for (i in fLastBuffer.indices){
+                vectorBuffer1[i] = k2[i] - k1[i]
+            }
+
+            val q1 = (6.0 * abs(alpha2) * accuracy / abs(1.0 - 6.0*g)) / zeroSafetyNorm(vectorBuffer1, outY, v)
+
+            val timeNext = time + step
+            if (q1 < 1.0 && !isLowStepSizeReached && !isHighStepSizeReached) {
+                step = q1 * step / 1.1
+
+                isLowStepSizeReached = isLowStepSizeReached(step)
+                isHighStepSizeReached = isLowStepSizeReached(step)
+
                 continue
             }
 
-            val q2 = findQ2(fLastBuffer, fCurrentBuffer, step, accuracy)
-            val r = findR(k1Buffer, k2Buffer, k3Buffer)
+            for (i in fLastBuffer.indices){
+                vectorBuffer1[i] = fCurrentBuffer[i] - fLastBuffer[i]
+            }
 
+            val q2 = (6.0*accuracy / (abs(1.0 - 6.0*g)*step)) / zeroSafetyNorm(vectorBuffer1, outY, v)
+            val r = findR(k1, k2, k3)
 
-            if (q2 < 1.0 && r < 1) {
-                step = min(t + t0 - time , q2 * step / 1.1)
+            if (q2 < 1.0 && r < 1.0 && !isLowStepSizeReached && !isHighStepSizeReached) {
+                step = q2 * step / 1.1
+
+                isLowStepSizeReached = isLowStepSizeReached(step)
+                isHighStepSizeReached = isLowStepSizeReached(step)
+
                 continue
             }
 
-            step = if(q2 < 1){
-                min(t + t0 - time , min(q1, q2)*step)
-            } else{
-                max(step, min(q1, min(q2, r))*step)
-            }
+            step = if(q2 < 1) min(q1, q2)*step else max(step, min(q1, min(q2, r))*step)
+
+            isLowStepSizeReached = isLowStepSizeReached(step)
+            isHighStepSizeReached = isLowStepSizeReached(step)
 
             val temp = fLastBuffer
             fLastBuffer = fCurrentBuffer
@@ -89,7 +123,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
                 outY[i] = yNextBuffer[i]
             }
 
-            stepInfo.set(time, outY, isLowStepSizeReached(step), isHighStepSizeReached(step))
+            stepInfo.set(time, outY, isLowStepSizeReached, isHighStepSizeReached)
 
             executeStepHandlers(stepInfo)
 
@@ -125,15 +159,11 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
     }
 
     private fun findR(k1: DoubleArray, k2: DoubleArray, k3: DoubleArray) : Double {
-        require(k1.size == k2.size && k2.size == k3.size)
-
-        var max = Double.NEGATIVE_INFINITY
+        var max = 0.0
         for (i in k1.indices){
-            val result = abs((k3[i] - k2[i]) / (k2[i] - k1[i]))
-            if(result > max)
-                max = result
+            max = max(abs((k3[i] - k2[i]) / (k2[i] - k1[i])), max)
         }
 
-        return 2/max
+        return 2.0/max
     }
 }

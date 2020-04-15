@@ -57,63 +57,28 @@ fun main() {
 
     //rungeKuttaSecondOrderExample(3e-2)
 
-    luTest()
-
+    //luTest()
 
     //rk2VdPExample(6.0)
 
-
-    ringModulatorMK22Example()
-    mk22VdPExample(6.0)
+    //ringModulatorMK22Example()
+    //mk22VdPExample(6.0)
     //mk22Other2Test()
     //mk22Other3Test()
 
     //mk22VdPAlternateExample(3.0e-6)
     //mk22VdPAlternateExample(3.0e-5)
    // mk22VdPAlternateExample(3.0e-4)
-    mk22VdPAlternateExample(3.0e-3)
-    mk22VdPAlternateExample(0.75e-2)
-    mk22VdPAlternateExample(1.5e-2)
-    mk22VdPAlternateExample(3.0e-2)
+    //mk22VdPAlternateExample(3.0e-3)
+    //mk22VdPAlternateExample(0.75e-2)
+    //mk22VdPAlternateExample(1.5e-2)
+    //mk22VdPAlternateExample(3.0e-2)
+
+    //eulerVdPExample(6.0)
+
+    rk2VdPExample(6.0)
 }
 
-fun testRungeKuttaSecondOrder(mu: Double)
-{
-    val solverRK2 = RK23StabilityControlIntegrator(100, 0.01)
-
-    for(i in 0..400)
-    {
-        val output = doubleArrayOf(-2.0, 0.0)
-
-        solverRK2.integrate(0.0, output,0.05 * i, output)
-        { t: Double, inY: DoubleArray, outY: DoubleArray ->
-            outY[0] = inY[1]
-            outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
-        }
-
-        print("(${output[0]};${output[1]}) ")
-    }
-}
-
-fun testRungeKuttaWithStepHandlerSecondOrder(mu: Double)
-{
-    val builder = StringBuilder()
-    val solverRK2 = RK23StabilityControlIntegrator(100,0.01)
-    solverRK2.addStepHandler { info ->  builder.append("${info.yValue[0]};${info.yValue[1]} \n");}
-    //solverRK2.enableEvaluationCountCheck(2000)
-
-    val output = doubleArrayOf(-2.0, 0.0)
-
-    solverRK2.integrate(0.0, output,20.0, output)
-    { t: Double, inY: DoubleArray, outY: DoubleArray ->
-        outY[0] = inY[1]
-        outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
-    }
-
-    val writingText = builder.replace(Regex("[.]"), ",")
-
-    File("data(${mu}).csv ").writeText(writingText)
-}
 
 fun testRungeKuttaWithStepHandlerFourthOrder(mu: Double)
 {
