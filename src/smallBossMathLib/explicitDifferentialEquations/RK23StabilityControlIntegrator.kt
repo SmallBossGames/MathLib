@@ -83,7 +83,6 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             val q1 = ((6.0 * abs(alpha2) * accuracy / abs(1.0 - 6.0*g)) / zeroSafetyNorm(vectorBuffer1, outY, v))
                 .pow(1.0/3.0)
 
-            val timeNext = time + step
             if (q1 < 1.0 && !isLowStepSizeReached && !isHighStepSizeReached) {
                 step = q1 * step / 1.1
 
@@ -111,6 +110,16 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
                 continue
             }
 
+            for (i in yNextBuffer.indices) {
+                outY[i] = yNextBuffer[i]
+            }
+
+            time += step
+
+            stepInfo.set(time, outY, isLowStepSizeReached, isHighStepSizeReached)
+
+            executeStepHandlers(stepInfo)
+
             step = if(q2 < 1) min(q1, q2)*step else max(step, min(q1, min(q2, r))*step)
 
             isLowStepSizeReached = isLowStepSizeReached(step)
@@ -119,16 +128,6 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             val temp = fLastBuffer
             fLastBuffer = fCurrentBuffer
             fCurrentBuffer = temp
-
-            time = timeNext
-
-            for (i in yNextBuffer.indices) {
-                outY[i] = yNextBuffer[i]
-            }
-
-            stepInfo.set(time, outY, isLowStepSizeReached, isHighStepSizeReached)
-
-            executeStepHandlers(stepInfo)
 
             currentEvaluationsCount++
         }

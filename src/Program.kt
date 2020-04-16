@@ -1,10 +1,7 @@
 import org.apache.commons.math3.analysis.differentiation.DerivativeStructure
 import org.apache.commons.math3.analysis.differentiation.UnivariateDifferentiableFunction
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations
-import smallBossMathLib.explicitDifferentialEquations.RK4StabilityControlIntegrator
-import smallBossMathLib.explicitDifferentialEquations.RK23StabilityControlIntegrator
 import smallBossMathLib.examples.*
-import java.io.File
 
 class MyFunction:UnivariateDifferentiableFunction{
     override fun value(t: DerivativeStructure?): DerivativeStructure {
@@ -78,7 +75,9 @@ fun main() {
 
     //eulerVdPExample(6.0)
 
-    //rk2VdPExample(6.0)
+    rk2stVdPExample(6.0)
+
+    rk2VdPExample(6.0)
 
     rk4VdPExample(6.0)
 }
