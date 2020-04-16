@@ -79,5 +79,7 @@ fun main() {
 
     rk2VdPExample(6.0)
 
-    rk4VdPExample(6.0)
+    rk4stVdPExample(6.0)
+
+    rkm4VdPExample(6.0)
 }
