@@ -62,7 +62,7 @@ fun main() {
     //rk2VdPExample(6.0)
 
     //ringModulatorMK22Example()
-    //mk22VdPExample(6.0)
+
     //mk22Other2Test()
     //mk22Other3Test()
 
@@ -72,29 +72,13 @@ fun main() {
     //mk22VdPAlternateExample(3.0e-3)
     //mk22VdPAlternateExample(0.75e-2)
     //mk22VdPAlternateExample(1.5e-2)
-    //mk22VdPAlternateExample(3.0e-2)
+    mk22VdPAlternateExample(3.0e-2)
+
+    mk22VdPExample(6.0)
 
     //eulerVdPExample(6.0)
 
-    rk2VdPExample(6.0)
-}
+    //rk2VdPExample(6.0)
 
-
-fun testRungeKuttaWithStepHandlerFourthOrder(mu: Double)
-{
-    val builder = StringBuilder()
-    val solverRK4 = RK4StabilityControlIntegrator( 100,0.01)
-    solverRK4.addStepHandler { info ->  builder.append("${info.yValue[0]};${info.yValue[1]} \n");}
-
-    val output = doubleArrayOf(-2.0, 0.0)
-
-    solverRK4.integrate(0.0, output,2000.0, output)
-    { t: Double, inY: DoubleArray, outY: DoubleArray ->
-        outY[0] = inY[1]
-        outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
-    }
-
-    val writingText = builder.replace(Regex("[.]"), ",")
-
-    File("data4(${mu}).csv ").writeText(writingText)
+    rk4VdPExample(6.0)
 }

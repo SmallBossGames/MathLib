@@ -11,8 +11,6 @@ const val p2 = 0.5/a
 const val beta = 0.29289321881
 const val alpha = -2*a
 
-const val v = 1e-7
-
 class MK22Integrator (val startEvaluationCount: Int,
                       val freezeJacobiSteps: Int,
                       val stepSizeCoefficient: Double,
@@ -23,13 +21,12 @@ class MK22Integrator (val startEvaluationCount: Int,
         t0: Double,
         y0: DoubleArray,
         t: Double,
+        rVector: DoubleArray,
         outY: DoubleArray,
-        equations: (inY: DoubleArray, outF: DoubleArray) -> Unit) : ImplicitIntegratorResult {
+        equations: (inY: DoubleArray, outF: DoubleArray) -> Unit) {
 
         if (y0.size != outY.size)
             throw IllegalArgumentException()
-
-
 
         y0.copyInto(outY)
 
@@ -119,7 +116,7 @@ class MK22Integrator (val startEvaluationCount: Int,
                 vectorBuffer1[i] = k2[i] + (2*a-1.0)*k1[i]
             }
 
-            val e1 = zeroSafetyNorm(vectorBuffer1, outY, v)
+            val e1 = zeroSafetyNorm(vectorBuffer1, outY, rVector)
             val q1 = sqrt(accuracy*(abs(a-2*a*a)/abs(a - 1.0/3.0)) / e1)
 
             val e2: Double
@@ -127,7 +124,7 @@ class MK22Integrator (val startEvaluationCount: Int,
             if(q1 < 1.0){
                 dMatrix.inverseLU(matrixBuffer)
                 matrixBuffer.multiply(vectorBuffer1, vectorBuffer2)
-                e2 = zeroSafetyNorm(vectorBuffer2, outY, v)
+                e2 = zeroSafetyNorm(vectorBuffer2, outY, rVector)
                 q2 = sqrt(accuracy*(abs(a-2*a*a)/abs(a - 1.0/3.0)) / e2)
             } else {
                 e2 = e1
@@ -173,9 +170,5 @@ class MK22Integrator (val startEvaluationCount: Int,
                 freezeStepsCount = 0
             }
         }
-
-        val avgStep = t / stepsCount
-
-        return ImplicitIntegratorResult(stepsCount, avgStep, evaluationsCount, jacobiEvaluationsCount, returnsCount)
     }
 }

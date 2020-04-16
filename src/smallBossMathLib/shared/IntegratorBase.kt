@@ -107,9 +107,9 @@ abstract class IntegratorBase {
         isMaxStepControlEnabled = false
     }
 
-    fun isLowStepSizeReached(step: Double) = isMinStepControlEnabled && step < minStepValue
+    fun isLowStepSizeReached(step: Double) = isMinStepControlEnabled && step <= minStepValue
 
-    fun isHighStepSizeReached(step: Double) = isMinStepControlEnabled && step > minStepValue
+    fun isHighStepSizeReached(step: Double) = isMaxStepControlEnabled && step >= maxStepValue
 
     @Throws(ExceedingLimitEvaluationsException::class)
     fun checkEvaluationCount(evaluations: Int){

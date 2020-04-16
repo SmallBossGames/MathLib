@@ -2,6 +2,7 @@ package smallBossMathLib.examples
 
 import smallBossMathLib.explicitDifferentialEquations.EulerIntegrator
 import smallBossMathLib.explicitDifferentialEquations.RK23StabilityControlIntegrator
+import smallBossMathLib.explicitDifferentialEquations.RK4StabilityControlIntegrator
 import smallBossMathLib.implicitDifferentialEquations.MK22Integrator
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
@@ -54,9 +55,10 @@ fun mk22VdPExample(mu: Double)
         solver.enableStepCountLimit(20000)
 
         val output = doubleArrayOf(2.0, 0.0)
+        val rVector = DoubleArray(output.size) { 1e-7 }
 
         try {
-            solver.integrate(0.0, output,20.0, output)
+            solver.integrate(0.0, output,20.0, rVector, output)
             {inY: DoubleArray, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
@@ -73,6 +75,34 @@ fun rk2VdPExample(mu: Double){
     val solverRK2 = RK23StabilityControlIntegrator(100,0.01)
 
     File("VanDerPaul(mu = $mu).rk23st.csv ").bufferedWriter().use { out ->
+        solverRK2.addStepHandler { info ->
+            val str = "${info.time};${info.yValue[0]};${info.yValue[1]}".replace('.', ',')
+            out.appendln(str)
+        }
+        //solverRK2.enableStepCountLimit(2000)
+        val output = doubleArrayOf(-2.0, 0.0)
+
+        try {
+            solverRK2.integrate(0.0, output,20.0, output)
+            { inY: DoubleArray, outY: DoubleArray ->
+                outY[0] = inY[1]
+                outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
+            }
+        } catch (ex: ExceedingLimitEvaluationsException){
+            println(ex.message)
+        } catch (ex: ExceedingLimitStepsException){
+            println(ex.message)
+        }
+
+
+    }
+}
+
+
+fun rk4VdPExample(mu: Double){
+    val solverRK2 = RK4StabilityControlIntegrator(100,0.01)
+
+    File("VanDerPaul(mu = $mu).rk45st.csv ").bufferedWriter().use { out ->
         solverRK2.addStepHandler { info ->
             val str = "${info.time};${info.yValue[0]};${info.yValue[1]}".replace('.', ',')
             out.appendln(str)
@@ -113,9 +143,10 @@ fun mk22VdPAlternateExample(p: Double)
         solver.enableStepCountLimit(20000)
 
         val output = doubleArrayOf(2.0, 0.0)
+        val rVector = DoubleArray(output.size) { 1e-7 }
 
         try {
-            solver.integrate(0.0, output,10.0, output)
+            solver.integrate(0.0, output,10.0, rVector, output)
             {inY: DoubleArray, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = ((1.0 - inY[0] * inY[1])*inY[1] - inY[0]) / p

@@ -103,6 +103,7 @@ fun ringModulatorMK22Example(){
 
     File("RingModulator.csv ").bufferedWriter().use { out ->
         val output = DoubleArray(16)
+        val rVector = DoubleArray(output.size) { 1e-7 }
 
         out.appendln("t;timeFromIntegration;y14;isMinStepReached")
         integrator.addStepHandler(){ info ->
@@ -116,7 +117,7 @@ fun ringModulatorMK22Example(){
         integrator.enableLowStepLimit(1e-30)
 
         try {
-            integrator.integrate(0.0, output, 0.001, output, ::mainFunction)
+            integrator.integrate(0.0, output, 0.001, rVector, output, ::mainFunction)
         } catch (ex: ExceedingLimitEvaluationsException){
             println(ex.message)
         } catch (ex: ExceedingLimitStepsException){

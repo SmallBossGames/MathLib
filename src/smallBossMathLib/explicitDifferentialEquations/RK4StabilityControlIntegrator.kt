@@ -1,21 +1,20 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.differentialEquations.IFirstOrderIntegrator
 import smallBossMathLib.shared.IntegratorBase
 import smallBossMathLib.shared.StepInfo
+import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.*
 
-class RK4StabilityControlIntegrator(
-    val evaluations: Int,
-    val accuracy: Double
-) : IntegratorBase() {
+private const val v = 1e-7
+
+class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) : IntegratorBase() {
 
     fun integrate(
         t0: Double,
         y0: DoubleArray,
         t: Double,
         outY: DoubleArray,
-        equations: (t: Double, inY: DoubleArray, outY: DoubleArray) -> Unit
+        equations: (y: DoubleArray, outF: DoubleArray) -> Unit
     ) {
         y0.copyInto(outY)
 
@@ -23,87 +22,98 @@ class RK4StabilityControlIntegrator(
         var fLastBuffer = DoubleArray(y0.size)
 
         val yNextBuffer = DoubleArray(y0.size)
+        val vectorBuffer1 = DoubleArray(y0.size)
 
-        val kMatrix = Array(5){ DoubleArray(y0.size) }
+        val k = Array(5){ DoubleArray(y0.size) }
 
         var time = t0
         var step = t / evaluations
 
-        val stepInfo = StepInfo(t0, y0, isLowStepSizeReached(step), isHighStepSizeReached(step))
+        var isLowStepSizeReached = isLowStepSizeReached(step)
+        var isHighStepSizeReached = isHighStepSizeReached(step)
+
+        val endTime = t0 + t
+
+        val stepInfo = StepInfo(t0, y0, isLowStepSizeReached, isHighStepSizeReached)
 
         executeStepHandlers(stepInfo)
 
-        equations(time, outY, fLastBuffer)
+        equations(outY, fLastBuffer)
 
-        while (time < t0 + t) {
+        while (time < endTime) {
+            step = normalizeStep(step, time, endTime)
+
             for (i in fLastBuffer.indices) {
-                kMatrix[0][i] = step * fLastBuffer[i]
-                yNextBuffer[i] = outY[i] +
-                        1.0 / 3.0 * kMatrix[0][i]
+                k[0][i] = step * fLastBuffer[i]
+                yNextBuffer[i] = outY[i] + 1.0 / 3.0 * k[0][i]
             }
 
-            equations(time, yNextBuffer, fCurrentBuffer)
+            equations(yNextBuffer, fCurrentBuffer)
 
             for (i in fCurrentBuffer.indices) {
-                kMatrix[1][i] = step * fCurrentBuffer[i]
-                yNextBuffer[i] = outY[i] +
-                        1.0 / 6.0 * kMatrix[0][i] +
-                        1.0 / 6.0 * kMatrix[1][i]
+                k[1][i] = step * fCurrentBuffer[i]
+                yNextBuffer[i] = outY[i] + 1.0 / 6.0 * k[0][i] + 1.0 / 6.0 * k[1][i]
             }
 
-            equations(time, yNextBuffer, fCurrentBuffer)
+            equations(yNextBuffer, fCurrentBuffer)
 
             for (i in fCurrentBuffer.indices) {
-                kMatrix[2][i] = step * fCurrentBuffer[i]
-                yNextBuffer[i] = outY[i] +
-                        1.0 / 8.0 * kMatrix[0][i] +
-                        3.0 / 8.0 * kMatrix[2][i]
+                k[2][i] = step * fCurrentBuffer[i]
+                yNextBuffer[i] = outY[i] + 1.0 / 8.0 * k[0][i] + 3.0 / 8.0 * k[2][i]
             }
 
-            equations(time, yNextBuffer, fCurrentBuffer)
+            equations(yNextBuffer, fCurrentBuffer)
 
             for (i in fCurrentBuffer.indices) {
-                kMatrix[3][i] = step * fCurrentBuffer[i]
-                yNextBuffer[i] = outY[i] +
-                        1.0 / 2.0 * kMatrix[0][i] -
-                        3.0 / 2.0 * kMatrix[2][i] +
-                        2.0 * kMatrix[3][i]
+                k[3][i] = step * fCurrentBuffer[i]
+                yNextBuffer[i] = outY[i] + 1.0 / 2.0 * k[0][i] - 3.0 / 2.0 * k[2][i] + 2.0 * k[3][i]
             }
 
-            equations(time, yNextBuffer, fCurrentBuffer)
+            equations(yNextBuffer, fCurrentBuffer)
 
             for (i in fCurrentBuffer.indices) {
-                kMatrix[4][i] = step * fCurrentBuffer[i]
-                yNextBuffer[i] = outY[i] +
-                        1.0 / 6.0 * kMatrix[0][i] +
-                        2.0 / 3.0 * kMatrix[3][i] +
-                        1.0 / 6.0 * kMatrix[4][i]
+                k[4][i] = step * fCurrentBuffer[i]
             }
 
-            val timeNext = step + time
-            equations(timeNext, yNextBuffer, fCurrentBuffer)
+            for (i in vectorBuffer1.indices){
+                vectorBuffer1[i] = 2*k[0][i] - 9*k[2][i] + 8*k[3][i] - k[4][i]
+            }
 
-            val q = findQ1(kMatrix, accuracy)
-            if (q < 1.0) {
-                step = min(t + t0 - time , q * step)
+            val cNorm = accuracy.pow(5.0/4.0) / (zeroSafetyNorm(vectorBuffer1, outY, v) / 150.0)
+            val q1 = cNorm.pow(1.0/4.0)
+
+            if (q1 < 1.0 && !isLowStepSizeReached && !isHighStepSizeReached) {
+                step *= q1
+
+                isLowStepSizeReached = isLowStepSizeReached(step)
+                isHighStepSizeReached = isHighStepSizeReached(step)
+
                 continue
             }
 
-            val r = findR(kMatrix[0], kMatrix[1], kMatrix[2])
+            val q2 = cNorm.pow(1.0/5.0)
 
-            step = max(step, min(q, r)*step)
+            for (i in yNextBuffer.indices) {
+                yNextBuffer[i] = outY[i] + 1.0 / 6.0 * k[0][i] + 2.0 / 3.0 * k[3][i] + 1.0 / 6.0 * k[4][i]
+            }
+
+            equations(yNextBuffer, fCurrentBuffer)
+
+            val r = findR(k[0], k[1], k[2])
+
+            step = max(step, min(q2, r)*step)
 
             val temp = fLastBuffer
             fLastBuffer = fCurrentBuffer
             fCurrentBuffer = temp
 
-            time = timeNext
+            time += step
 
             for (i in yNextBuffer.indices) {
                 outY[i] = yNextBuffer[i]
             }
 
-            stepInfo.set(time, outY, isLowStepSizeReached(step), isHighStepSizeReached(step))
+            stepInfo.set(time, outY, isLowStepSizeReached, isHighStepSizeReached)
 
             executeStepHandlers(stepInfo)
         }

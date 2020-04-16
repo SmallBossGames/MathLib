@@ -16,8 +16,9 @@ fun mk22Other2Test(){
     //solverRK2.enableEvaluationCountCheck(2000)
 
     val output = doubleArrayOf(1.0, 0.0, 0.0)
+    val rVector = DoubleArray(output.size) { 1e-7 }
 
-    solverRK2.integrate(0.0, output,100.0, output)
+    solverRK2.integrate(0.0, output,100.0, output, rVector)
     { inY: DoubleArray, outY: DoubleArray ->
         outY[0] = -0.04*inY[0]+0.01*inY[1]*inY[2]
         outY[1] = 400*inY[0]-100*inY[1]*inY[2]-3000.0* inY[1].pow(2.0)
@@ -43,8 +44,9 @@ fun mk22Other3Test(){
     //solverRK2.enableEvaluationCountCheck(2000)
 
     val output = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+    val rVector = DoubleArray(output.size) { 1e-7 }
 
-    solverRK2.integrate(0.0, doubleArrayOf(1.0, 1.0, 0.0, 0.0),100.0, output)
+    solverRK2.integrate(0.0, doubleArrayOf(1.0, 1.0, 0.0, 0.0),100.0, output, rVector)
     { i: DoubleArray, o: DoubleArray ->
         o[0] = i[2]-100.0*i[0]*i[1]
         o[1] = i[2]-2.0*i[3]-100.0*i[0]*i[1]-20000.0*i[1].pow(2)
