@@ -1,4 +1,6 @@
-package smallBossMathLib.shared
+package smallBossMathLib.explicitDifferentialEquations
+
+import smallBossMathLib.explicitDifferentialEquations.IExplicitMethodStepInfo
 
 data class ExplicitMethodStepInfo(
     override var isLowStepSizeReached: Boolean,

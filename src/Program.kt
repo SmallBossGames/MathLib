@@ -57,8 +57,8 @@ fun main() {
     //luTest()
 
     //rk2VdPExample(6.0)
-
-    //ringModulatorMK22Example()
+    
+    ringModulatorMK22Example()
 
     //mk22Other2Test()
     //mk22Other3Test()
