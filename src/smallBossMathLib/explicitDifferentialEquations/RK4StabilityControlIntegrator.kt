@@ -1,13 +1,13 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.shared.IntegratorBase
+import smallBossMathLib.shared.Integrator
 import smallBossMathLib.shared.StepInfo
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.*
 
 private const val v = 1e-7
 
-class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) : IntegratorBase() {
+class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) : Integrator() {
 
     fun integrate(
         t0: Double,

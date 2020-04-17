@@ -1,6 +1,6 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.shared.IntegratorBase
+import smallBossMathLib.shared.Integrator
 import smallBossMathLib.shared.StepInfo
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.*
@@ -18,7 +18,7 @@ private const val p3 = 27.0/56.0
 private const val v = 1e-7
 
 class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
-    : IntegratorBase()
+    : Integrator()
 {
     fun integrate(
         t0: Double,

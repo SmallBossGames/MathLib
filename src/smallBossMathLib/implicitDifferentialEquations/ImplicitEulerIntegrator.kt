@@ -1,6 +1,6 @@
 package smallBossMathLib.implicitDifferentialEquations
 
-import smallBossMathLib.shared.IntegratorBase
+import smallBossMathLib.shared.Integrator
 
-class ImplicitEulerIntegrator: IntegratorBase() {
+class ImplicitEulerIntegrator: Integrator() {
 }

@@ -3,7 +3,7 @@ package smallBossMathLib.shared
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 
-abstract class IntegratorBase {
+abstract class Integrator {
     var isStepCountLimitEnabled: Boolean = false
         private set
 

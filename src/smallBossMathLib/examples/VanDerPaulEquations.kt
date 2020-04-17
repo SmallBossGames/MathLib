@@ -45,9 +45,9 @@ fun mk22VdPExample(mu: Double)
         0.001)
 
     File("VanDerPaul(mu = ${mu}).csv ").bufferedWriter().use { out ->
-        out.appendln("t;y1;y2")
-        solver.addStepHandler { info ->
-            val str = "${info.time};${info.yValue[0]};${info.yValue[1]}".replace('.', ',')
+        out.appendln("t;y1;y2;")
+        solver.addStepHandler { t, y, _ ->
+            val str = "${t};${y[0]};${y[1]}".replace('.', ',')
             out.appendln(str);
         }
         solver.enableStepCountLimit(20000)
@@ -56,11 +56,12 @@ fun mk22VdPExample(mu: Double)
         val rVector = DoubleArray(output.size) { 1e-7 }
 
         try {
-            solver.integrate(0.0, output,20.0, rVector, output)
+            val result = solver.integrate(0.0, output,20.0, rVector, output)
             {inY: DoubleArray, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
             }
+            println(result.toString())
         } catch (ex: ExceedingLimitEvaluationsException){
             println(ex.message)
         } catch (ex: ExceedingLimitStepsException){

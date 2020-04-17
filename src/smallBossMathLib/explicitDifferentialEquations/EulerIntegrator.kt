@@ -1,13 +1,13 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.shared.IntegratorBase
+import smallBossMathLib.shared.Integrator
 import smallBossMathLib.shared.StepInfo
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.sqrt
 
 
 class EulerIntegrator(val startEvaluations: Int,
-                      val accuracy: Double) : IntegratorBase() {
+                      val accuracy: Double) : Integrator() {
     fun integrate(
         t0: Double,
         y0: DoubleArray,

@@ -14,7 +14,7 @@ const val alpha = -2*a
 class MK22Integrator (val startEvaluationCount: Int,
                       val freezeJacobiSteps: Int,
                       val stepSizeCoefficient: Double,
-                      val accuracy: Double) : IntegratorBase() {
+                      val accuracy: Double) : ImplicitIntegrator() {
 
     @Throws(ExceedingLimitStepsException::class, ExceedingLimitEvaluationsException::class)
     fun integrate(
@@ -23,7 +23,7 @@ class MK22Integrator (val startEvaluationCount: Int,
         t: Double,
         rVector: DoubleArray,
         outY: DoubleArray,
-        equations: (inY: DoubleArray, outF: DoubleArray) -> Unit) {
+        equations: (inY: DoubleArray, outF: DoubleArray) -> Unit) : IImplicitMethodStepInfo {
 
         if (y0.size != outY.size)
             throw IllegalArgumentException()
@@ -46,41 +46,40 @@ class MK22Integrator (val startEvaluationCount: Int,
         var freezeStepsCount = 0
         var isNeedFindJacobi = true
 
-        var stepsCount = 0
-        var evaluationsCount = 0
-        var jacobiEvaluationsCount = 0
-        var returnsCount = 0
+        val stepInfo = ImplicitMethodStepInfo(
+            isLowStepSizeReached = isLowStepSizeReached(step),
+            isHighStepSizeReached = isHighStepSizeReached(step),
+            stepsCount = 0,
+            evaluationsCount = 0,
+            jacobiEvaluationsCount = 0,
+            returnsCount = 0
+        )
 
-        var isLowStepSizeReached = false
-        var isHighStepSizeReached = false
-
-        val stepInfo = StepInfo(t0, y0, isLowStepSizeReached, isHighStepSizeReached)
-
-        executeStepHandlers(stepInfo)
+        executeStepHandlers(time, outY, stepInfo)
 
         while (time < endTime){
             step = normalizeStep(step, time, endTime)
 
-            checkStepCount(stepsCount)
+            checkStepCount(stepInfo.stepsCount)
 
             if(freezeStepsCount == 0 && isNeedFindJacobi) {
-                checkEvaluationCount(evaluationsCount)
+                checkEvaluationCount(stepInfo.evaluationsCount)
                 equations(outY, vectorBuffer2)
-                evaluationsCount++
+                stepInfo.evaluationsCount++
                 outY.copyInto(vectorBuffer1)
                 for (i in vectorBuffer1.indices){
                     val r = max(1e-14, 1e-7*abs(outY[i]))
                     val jacobiColumn = jacobiMatrix.columns[i]
                     vectorBuffer1[i] += r
-                    checkEvaluationCount(evaluationsCount)
+                    checkEvaluationCount(stepInfo.evaluationsCount)
                     equations(vectorBuffer1, jacobiColumn)
-                    evaluationsCount++
+                    stepInfo.evaluationsCount++
                     for (j in jacobiColumn.indices){
                         jacobiColumn[j] = (jacobiColumn[j] - vectorBuffer2[j]) / r
                     }
                     vectorBuffer1[i] = outY[i]
                 }
-                jacobiEvaluationsCount++
+                stepInfo.jacobiEvaluationsCount++
             } else {
                 isNeedFindJacobi = true
             }
@@ -94,9 +93,9 @@ class MK22Integrator (val startEvaluationCount: Int,
             for (i in vectorBuffer1.indices){
                 vectorBuffer1[i] = outY[i]
             }
-            checkEvaluationCount(evaluationsCount)
+            checkEvaluationCount(stepInfo.evaluationsCount)
             equations(vectorBuffer1, vectorBuffer2)
-            evaluationsCount++
+            stepInfo.evaluationsCount++
             for (i in vectorBuffer2.indices){
                 vectorBuffer2[i] = step*vectorBuffer2[i]
             }
@@ -104,9 +103,9 @@ class MK22Integrator (val startEvaluationCount: Int,
             for (i in vectorBuffer1.indices){
                 vectorBuffer1[i] = outY[i] + beta*k1[i]
             }
-            checkEvaluationCount(evaluationsCount)
+            checkEvaluationCount(stepInfo.evaluationsCount)
             equations(vectorBuffer1, vectorBuffer2)
-            evaluationsCount++
+            stepInfo.evaluationsCount++
             for (i in vectorBuffer2.indices){
                 vectorBuffer2[i] = step*vectorBuffer2[i] + alpha*k1[i]
             }
@@ -131,7 +130,7 @@ class MK22Integrator (val startEvaluationCount: Int,
                 q2 = q1
             }
 
-            if (q2 < 1.0 && !isLowStepSizeReached && !isHighStepSizeReached){
+            if (q2 < 1.0 && !stepInfo.isLowStepSizeReached && !stepInfo.isHighStepSizeReached){
                 if(freezeStepsCount == 0) {
                     isNeedFindJacobi = false
                 } else {
@@ -140,10 +139,10 @@ class MK22Integrator (val startEvaluationCount: Int,
 
                 step *= q2
 
-                isLowStepSizeReached = isLowStepSizeReached(step)
-                isHighStepSizeReached = isHighStepSizeReached(step)
+                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
+                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
 
-                returnsCount++
+                stepInfo.returnsCount++
 
                 continue
             }
@@ -153,22 +152,22 @@ class MK22Integrator (val startEvaluationCount: Int,
             }
 
             time += step
-            stepsCount++
+            stepInfo.stepsCount++
 
-            stepInfo.set(time, outY, isLowStepSizeReached, isHighStepSizeReached)
-            executeStepHandlers(stepInfo)
+            executeStepHandlers(time, outY, stepInfo)
 
             val stepNew = min(q1, q2)*step
 
             freezeStepsCount++
 
             if(!(freezeStepsCount < freezeJacobiSteps && stepNew < step*stepSizeCoefficient && e1 <= e2)){
-                isLowStepSizeReached = isLowStepSizeReached(stepNew)
-                isHighStepSizeReached = isHighStepSizeReached(stepNew)
+                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
+                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
 
                 step = stepNew
                 freezeStepsCount = 0
             }
         }
+        return stepInfo
     }
 }

@@ -1,10 +1,9 @@
 package smallBossMathLib.shared
 
-interface IImplicitMethodStepInfo {
+interface IExplicitMethodStepInfo {
     val isLowStepSizeReached:Boolean
     val isHighStepSizeReached: Boolean
     val stepsCount: Int
     val evaluationsCount: Int
-    val jacobiEvaluationsCount: Int
     val returnsCount: Int
 }

@@ -1,6 +1,6 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.shared.IntegratorBase
+import smallBossMathLib.shared.Integrator
 
-class EulerStabilityControlIntegrator : IntegratorBase() {
+class EulerStabilityControlIntegrator : Integrator() {
 }

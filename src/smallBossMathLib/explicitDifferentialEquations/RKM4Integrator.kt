@@ -1,10 +1,10 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.shared.IntegratorBase
+import smallBossMathLib.shared.Integrator
 import smallBossMathLib.shared.StepInfo
 import kotlin.math.abs
 
-class RKM4Integrator(val evaluations: Int, val accuracy: Double) : IntegratorBase() {
+class RKM4Integrator(val evaluations: Int, val accuracy: Double) : Integrator() {
     fun integrate(
         t0: Double,
         y0: DoubleArray,
