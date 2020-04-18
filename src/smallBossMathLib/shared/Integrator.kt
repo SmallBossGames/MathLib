@@ -28,7 +28,7 @@ abstract class Integrator {
     var minStepValue = 0.0
         private set
 
-    private val stepHandlers = HashSet<(info:StepInfo) -> Unit>()
+    /*private val stepHandlers = HashSet<(info:StepInfo) -> Unit>()
 
     fun addStepHandler(handler: (info:StepInfo) -> Unit) {
         stepHandlers += handler
@@ -45,7 +45,7 @@ abstract class Integrator {
     protected fun executeStepHandlers(info: StepInfo) {
         for (handler in stepHandlers)
             handler(info)
-    }
+    }*/
 
     //Evaluation control
     fun enableStepCountLimit(maxSteps: Int){

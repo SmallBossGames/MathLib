@@ -20,7 +20,7 @@ fun rungeKuttaSecondOrderExample(p: Double)
 {
     val builder = StringBuilder()
     val solverRK2 = RK23StabilityControlIntegrator(100,0.01)
-    solverRK2.addStepHandler { info ->  builder.append("${info.yValue[0]};${info.yValue[1]} \n");}
+    solverRK2.addStepHandler { t, y, _ ->  builder.append("${y[0]};${y[1]} \n");}
     solverRK2.enableStepCountLimit(10000)
 
     val output = doubleArrayOf(2.0, 0.0)
@@ -218,8 +218,8 @@ fun eulerVdPAlternateExample(p: Double)
 
     File("VanDerPaul(p = ${p}).csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
-        solver.addStepHandler { info ->
-            val str = "${info.time};${info.yValue[0]};${info.yValue[1]}".replace('.', ',')
+        solver.addStepHandler { t, y, _ ->
+            val str = "${t};${y[0]};${y[1]}".replace('.', ',')
             out.appendln(str);
         }
         solver.enableStepCountLimit(20000)
@@ -248,8 +248,8 @@ fun eulerVdPExample(mu: Double)
 
     File("VanDerPaul(mu = ${mu}).euler.csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
-        solver.addStepHandler { info ->
-            val str = "${info.time};${info.yValue[0]};${info.yValue[1]}".replace('.', ',')
+        solver.addStepHandler { t, y, _ ->
+            val str = "${t};${y[0]};${y[1]}".replace('.', ',')
             out.appendln(str);
         }
         solver.enableStepCountLimit(20000)
@@ -257,11 +257,12 @@ fun eulerVdPExample(mu: Double)
         val output = doubleArrayOf(2.0, 0.0)
 
         try {
-            solver.integrate(0.0, output,20.0, output)
+            val result = solver.integrate(0.0, output,20.0, output)
             {inY: DoubleArray, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
             }
+            println("eulerVdPExample: $result")
         } catch (ex: ExceedingLimitEvaluationsException){
             println(ex.message)
         } catch (ex: ExceedingLimitStepsException){

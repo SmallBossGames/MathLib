@@ -63,7 +63,7 @@ fun ringModulatorRK2Example(){
     val output = DoubleArray(15) {0.0}
 
     integrator.addStepHandler(){
-        info -> builder.append("${info.time};${info.yValue[13]} \n")
+        t, y, info -> builder.append("${t};${y[13]} \n")
     }
 
     integrator.enableStepCountLimit(20000)

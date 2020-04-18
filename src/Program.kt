@@ -73,7 +73,7 @@ fun main() {
 
     mk22VdPExample(6.0)
 
-    //eulerVdPExample(6.0)
+    eulerVdPExample(6.0)
 
     rk2stVdPExample(6.0)
 

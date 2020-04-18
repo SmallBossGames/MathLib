@@ -12,7 +12,9 @@ fun mk22Other2Test(){
         2.0,
         0.001)
 
-    solverRK2.addStepHandler { info ->  builder.append("${info.time};${info.yValue[0]};${info.yValue[1]};${info.yValue[2]} \n");}
+    solverRK2.addStepHandler { t, y, _ ->
+        builder.append("${t};${y[0]};${y[1]};${y[2]} \n");
+    }
     //solverRK2.enableEvaluationCountCheck(2000)
 
     val output = doubleArrayOf(1.0, 0.0, 0.0)
@@ -38,8 +40,8 @@ fun mk22Other3Test(){
         2.0,
         0.001)
 
-    solverRK2.addStepHandler { info ->
-        builder.append("${info.time};${info.yValue[0]};${info.yValue[1]};${info.yValue[2]};${info.yValue[3]} \n");
+    solverRK2.addStepHandler {t, y, _ ->
+        builder.append("${t};${y[0]};${y[1]};${y[2]};${y[3]} \n");
     }
     //solverRK2.enableEvaluationCountCheck(2000)
 
