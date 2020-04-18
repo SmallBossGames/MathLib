@@ -1,5 +1,6 @@
 package smallBossMathLib.explicitDifferentialEquations
 
+import smallBossMathLib.implicitDifferentialEquations.ImplicitMethodStepInfo
 import smallBossMathLib.shared.Integrator
 import smallBossMathLib.shared.StepInfo
 import smallBossMathLib.shared.zeroSafetyNorm
@@ -7,7 +8,7 @@ import kotlin.math.*
 
 private const val v = 1e-7
 
-class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) : Integrator() {
+class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) : ExplicitIntegrator() {
 
     fun integrate(
         t0: Double,
@@ -15,11 +16,10 @@ class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) 
         t: Double,
         outY: DoubleArray,
         equations: (y: DoubleArray, outF: DoubleArray) -> Unit
-    ) {
+    ) : IExplicitMethodStepInfo {
         y0.copyInto(outY)
 
-        var fCurrentBuffer = DoubleArray(y0.size)
-        var fLastBuffer = DoubleArray(y0.size)
+        val fCurrentBuffer = DoubleArray(y0.size)
 
         val yNextBuffer = DoubleArray(y0.size)
         val vectorBuffer1 = DoubleArray(y0.size)
@@ -29,26 +29,31 @@ class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) 
         var time = t0
         var step = t / evaluations
 
-        var isLowStepSizeReached = isLowStepSizeReached(step)
-        var isHighStepSizeReached = isHighStepSizeReached(step)
+        val stepInfo = ExplicitMethodStepInfo(
+            isLowStepSizeReached = isLowStepSizeReached(step),
+            isHighStepSizeReached = isHighStepSizeReached(step),
+            stepsCount = 0,
+            evaluationsCount = 0,
+            returnsCount = 0
+        )
 
         val endTime = t0 + t
 
-        val stepInfo = StepInfo(t0, y0, isLowStepSizeReached, isHighStepSizeReached)
-
-        executeStepHandlers(stepInfo)
-
-        equations(outY, fLastBuffer)
+        executeStepHandlers(t, y0, stepInfo)
 
         while (time < endTime) {
             step = normalizeStep(step, time, endTime)
 
-            for (i in fLastBuffer.indices) {
-                k[0][i] = step * fLastBuffer[i]
+            equations(outY, fCurrentBuffer)
+            stepInfo.evaluationsCount++
+
+            for (i in fCurrentBuffer.indices) {
+                k[0][i] = step * fCurrentBuffer[i]
                 yNextBuffer[i] = outY[i] + 1.0 / 3.0 * k[0][i]
             }
 
             equations(yNextBuffer, fCurrentBuffer)
+            stepInfo.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k[1][i] = step * fCurrentBuffer[i]
@@ -56,6 +61,7 @@ class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) 
             }
 
             equations(yNextBuffer, fCurrentBuffer)
+            stepInfo.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k[2][i] = step * fCurrentBuffer[i]
@@ -63,6 +69,7 @@ class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) 
             }
 
             equations(yNextBuffer, fCurrentBuffer)
+            stepInfo.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k[3][i] = step * fCurrentBuffer[i]
@@ -70,6 +77,7 @@ class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) 
             }
 
             equations(yNextBuffer, fCurrentBuffer)
+            stepInfo.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k[4][i] = step * fCurrentBuffer[i]
@@ -82,41 +90,32 @@ class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) 
             val cNorm = accuracy.pow(5.0/4.0) / (zeroSafetyNorm(vectorBuffer1, outY, v) / 150.0)
             val q1 = cNorm.pow(1.0/4.0)
 
-            if (q1 < 1.0 && !isLowStepSizeReached && !isHighStepSizeReached) {
+            if (q1 < 1.0 && !stepInfo.isLowStepSizeReached && !stepInfo.isHighStepSizeReached) {
                 step *= q1
 
-                isLowStepSizeReached = isLowStepSizeReached(step)
-                isHighStepSizeReached = isHighStepSizeReached(step)
+                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
+                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
+                stepInfo.returnsCount++
 
                 continue
             }
 
-            val q2 = cNorm.pow(1.0/5.0)
-
             for (i in yNextBuffer.indices) {
-                yNextBuffer[i] = outY[i] + 1.0 / 6.0 * k[0][i] + 2.0 / 3.0 * k[3][i] + 1.0 / 6.0 * k[4][i]
+                outY[i] += 1.0 / 6.0 * k[0][i] + 2.0 / 3.0 * k[3][i] + 1.0 / 6.0 * k[4][i]
             }
-
-            equations(yNextBuffer, fCurrentBuffer)
-
-            val r = findR(k[0], k[1], k[2])
-
-            step = max(step, min(q2, r)*step)
-
-            val temp = fLastBuffer
-            fLastBuffer = fCurrentBuffer
-            fCurrentBuffer = temp
 
             time += step
 
-            for (i in yNextBuffer.indices) {
-                outY[i] = yNextBuffer[i]
-            }
+            stepInfo.stepsCount++
 
-            stepInfo.set(time, outY, isLowStepSizeReached, isHighStepSizeReached)
+            executeStepHandlers(time, outY, stepInfo)
 
-            executeStepHandlers(stepInfo)
+            val q2 = cNorm.pow(1.0/5.0)
+            val r = findR(k[0], k[1], k[2])
+
+            step = max(step, min(q2, r)*step)
         }
+        return stepInfo
     }
 
     private fun findQ1(kMatrix: Array<DoubleArray>, accuracy: Double) : Double{

@@ -12,8 +12,8 @@ const val beta = 0.29289321881
 const val alpha = -2*a
 
 class MK22Integrator (val startEvaluationCount: Int,
-                      val freezeJacobiSteps: Int,
-                      val stepSizeCoefficient: Double,
+                      val maxFreezeSteps: Int,
+                      val stepGrowthCoefficient: Double,
                       val accuracy: Double) : ImplicitIntegrator() {
 
     @Throws(ExceedingLimitStepsException::class, ExceedingLimitEvaluationsException::class)
@@ -160,12 +160,12 @@ class MK22Integrator (val startEvaluationCount: Int,
 
             freezeStepsCount++
 
-            if(!(freezeStepsCount < freezeJacobiSteps && stepNew < step*stepSizeCoefficient && e1 <= e2)){
-                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
-                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
-
+            if(!(freezeStepsCount < maxFreezeSteps && stepNew < step * stepGrowthCoefficient && e1 <= e2)){
                 step = stepNew
                 freezeStepsCount = 0
+
+                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
+                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
             }
         }
         return stepInfo

@@ -18,7 +18,7 @@ private const val p3 = 27.0/56.0
 private const val v = 1e-7
 
 class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
-    : Integrator()
+    : ExplicitIntegrator()
 {
     fun integrate(
         t0: Double,
@@ -26,7 +26,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
         t: Double,
         outY: DoubleArray,
         equations: (inY: DoubleArray, outY: DoubleArray) -> Unit
-    ) {
+    ) : IExplicitMethodStepInfo {
         y0.copyInto(outY)
 
         var fCurrentBuffer = DoubleArray(y0.size)
@@ -42,15 +42,21 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
         var time = t0
         var step = t / evaluations
-        var isLowStepSizeReached = isLowStepSizeReached(step)
-        var isHighStepSizeReached = isHighStepSizeReached(step)
 
         val endTime = t0 + t
 
-        val stepInfo = StepInfo(t0, y0, isLowStepSizeReached, isHighStepSizeReached)
+        val stepInfo = ExplicitMethodStepInfo(
+            isLowStepSizeReached = isLowStepSizeReached(step),
+            isHighStepSizeReached = isHighStepSizeReached(step),
+            stepsCount = 0,
+            evaluationsCount = 0,
+            returnsCount = 0
+        )
 
-        executeStepHandlers(stepInfo)
+        executeStepHandlers(time, outY, stepInfo)
+
         equations(outY, fLastBuffer)
+        stepInfo.evaluationsCount++;
 
         while (time < endTime) {
             step = normalizeStep(step, time, endTime)
@@ -61,6 +67,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             }
 
             equations(yNextBuffer, fCurrentBuffer)
+            stepInfo.evaluationsCount++;
 
             for (i in fCurrentBuffer.indices) {
                 k2[i] = step * fCurrentBuffer[i]
@@ -68,6 +75,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             }
 
             equations(yNextBuffer, fCurrentBuffer)
+            stepInfo.evaluationsCount++;
 
             for (i in fCurrentBuffer.indices) {
                 k3[i] = step * fCurrentBuffer[i]
@@ -75,6 +83,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             }
             
             equations(yNextBuffer, fCurrentBuffer)
+            stepInfo.evaluationsCount++;
 
             for (i in fLastBuffer.indices){
                 vectorBuffer1[i] = k2[i] - k1[i]
@@ -83,11 +92,12 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             val q1 = ((6.0 * abs(alpha2) * accuracy / abs(1.0 - 6.0*g)) / zeroSafetyNorm(vectorBuffer1, outY, v))
                 .pow(1.0/3.0)
 
-            if (q1 < 1.0 && !isLowStepSizeReached && !isHighStepSizeReached) {
+            if (q1 < 1.0 && !stepInfo.isLowStepSizeReached && !stepInfo.isHighStepSizeReached) {
                 step = q1 * step / 1.1
 
-                isLowStepSizeReached = isLowStepSizeReached(step)
-                isHighStepSizeReached = isHighStepSizeReached(step)
+                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
+                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
+                stepInfo.returnsCount++
 
                 continue
             }
@@ -101,11 +111,12 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
             val r = findR(k1, k2, k3)
 
-            if (q2 < 1.0 && r < 1.0 && !isLowStepSizeReached && !isHighStepSizeReached) {
+            if (q2 < 1.0 && r < 1.0 && !stepInfo.isLowStepSizeReached && !stepInfo.isHighStepSizeReached) {
                 step = q2 * step / 1.1
 
-                isLowStepSizeReached = isLowStepSizeReached(step)
-                isHighStepSizeReached = isHighStepSizeReached(step)
+                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
+                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
+                stepInfo.returnsCount++
 
                 continue
             }
@@ -116,14 +127,14 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
             time += step
 
-            stepInfo.set(time, outY, isLowStepSizeReached, isHighStepSizeReached)
+            stepInfo.stepsCount++
 
-            executeStepHandlers(stepInfo)
+            executeStepHandlers(time, outY, stepInfo)
 
             step = if(q2 < 1) min(q1, q2)*step else max(step, min(q1, min(q2, r))*step)
 
-            isLowStepSizeReached = isLowStepSizeReached(step)
-            isHighStepSizeReached = isHighStepSizeReached(step)
+            stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
+            stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
 
             val temp = fLastBuffer
             fLastBuffer = fCurrentBuffer
@@ -131,9 +142,10 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
             currentEvaluationsCount++
         }
+        return stepInfo
     }
 
-    private fun findQ1(k1: DoubleArray, k2: DoubleArray, accuracy: Double) : Double{
+    /*private fun findQ1(k1: DoubleArray, k2: DoubleArray, accuracy: Double) : Double{
         require(k1.size == k2.size)
 
         var norm = 0.0
@@ -145,9 +157,9 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
         //стр. 95
         return (((6.0 * 2.0/3.0 * accuracy) / (1.0 - 6.0 * 1.0/16.0)) / norm)
-    }
+    }*/
 
-    private fun findQ2(f1: DoubleArray, f2: DoubleArray, step:Double, accuracy: Double) : Double {
+    /*private fun findQ2(f1: DoubleArray, f2: DoubleArray, step:Double, accuracy: Double) : Double {
         require(f1.size == f2.size)
 
         var norm = 0.0
@@ -158,7 +170,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
         norm *= step
 
         return ((6.0*accuracy / (1.0 - 6.0 * 1.0 / 16.0)) / norm)
-    }
+    }*/
 
     private fun findR(k1: DoubleArray, k2: DoubleArray, k3: DoubleArray) : Double {
         var max = 0.0

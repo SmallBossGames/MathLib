@@ -117,18 +117,16 @@ class Matrix2D(val size: Int) {
             outResultVector[i] = temp[i]
 
         for (i in indices){
-            val temp = outResultVector[i]
             for (j in (i + 1) until outResultVector.size){
-                outResultVector[j] -= temp * this[j, i]
+                outResultVector[j] -= outResultVector[i] * this[j, i]
             }
         }
 
         for (i in (rightPart.size-1) downTo  0){
-            val temp = outResultVector[i] / this[i, i]
-            outResultVector[i] = temp
+            outResultVector[i] = outResultVector[i] / this[i, i]
 
             for (j in (i-1) downTo  0){
-                outResultVector[j] -= temp * this[j, i]
+                outResultVector[j] -= outResultVector[i] * this[j, i]
             }
         }
     }
