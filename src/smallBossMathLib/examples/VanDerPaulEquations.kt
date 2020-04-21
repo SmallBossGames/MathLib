@@ -46,7 +46,7 @@ fun mk22VdPExample(mu: Double)
 
     File("VanDerPaul(mu = ${mu}).csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2;")
-        solver.addStepHandler { t, y, _ ->
+        solver.addStepHandler { t, y, _, _ ->
             val str = "${t};${y[0]};${y[1]}".replace('.', ',')
             out.appendln(str);
         }
@@ -189,7 +189,7 @@ fun mk22VdPAlternateExample(p: Double)
 
     File("VanDerPaul(p = ${p}).mk22.csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
-        solver.addStepHandler { t, y, _ ->
+        solver.addStepHandler { t, y, _, _ ->
             val str = "${t};${y[0]};${y[1]}".replace('.', ',')
             out.appendln(str);
         }

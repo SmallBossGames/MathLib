@@ -3,18 +3,39 @@ package smallBossMathLib.implicitDifferentialEquations
 import smallBossMathLib.shared.Integrator
 
 abstract class ImplicitIntegrator : Integrator() {
-    private val stepHandlers = HashSet<(time:Double, y:DoubleArray, info: IImplicitMethodStatistic) -> Unit>()
+    private val stepHandlers =
+        HashSet<(
+            time:Double,
+            y:DoubleArray,
+            state: IImplicitMethodStepState,
+            stat: IImplicitMethodStatistic
+        ) -> Unit>()
 
-    protected fun executeStepHandlers(time:Double, y:DoubleArray, info: IImplicitMethodStatistic) {
+    protected fun executeStepHandlers(
+        time:Double,
+        y:DoubleArray,
+        state: IImplicitMethodStepState,
+        stat: IImplicitMethodStatistic
+    ) {
         for (handler in stepHandlers)
-            handler(time, y, info)
+            handler(time, y, state, stat)
     }
 
-    fun addStepHandler(handler: (time:Double, y:DoubleArray, info: IImplicitMethodStatistic) -> Unit) {
+    fun addStepHandler(handler: (
+        time:Double,
+        y:DoubleArray,
+        state: IImplicitMethodStepState,
+        stat: IImplicitMethodStatistic
+    ) -> Unit) {
         stepHandlers += handler
     }
 
-    fun removeStepHandler(handler: (time:Double, y:DoubleArray, info: IImplicitMethodStatistic) -> Unit) {
+    fun removeStepHandler(handler: (
+        time:Double,
+        y:DoubleArray,
+        state: IImplicitMethodStepState,
+        stat: IImplicitMethodStatistic
+    ) -> Unit) {
         stepHandlers -= handler
     }
 }

@@ -89,9 +89,9 @@ fun ringModulatorMK22Example(){
         var counter = 0
 
         out.appendln("t;timeFromIntegration;y2;isMinStepReached")
-        integrator.addStepHandler(){ t, y, info ->
+        integrator.addStepHandler(){ t, y, state, _ ->
             if(counter % 5 == 0){
-                val str = "${t};${y[0]};${y[14]};${info.isLowStepSizeReached}"
+                val str = "${t};${y[0]};${y[14]};${state.isLowStepSizeReached}"
                     .replace('.',',')
                 out.appendln(str)
             }

@@ -43,44 +43,49 @@ class MK22Integrator (val startEvaluationCount: Int,
 
         var step = t / startEvaluationCount
         var time = t0
-        var freezeStepsCount = 0
         var isNeedFindJacobi = true
 
-        val stepInfo = ImplicitMethodStatistic(
-            isLowStepSizeReached = isLowStepSizeReached(step),
-            isHighStepSizeReached = isHighStepSizeReached(step),
+        val statistic = ImplicitMethodStatistic(
             stepsCount = 0,
             evaluationsCount = 0,
             jacobiEvaluationsCount = 0,
             returnsCount = 0
         )
 
-        executeStepHandlers(time, outY, stepInfo)
+        val state = ImplicitMethodStepState(
+            maxEigenvalue = 0.0,
+            minEigenvalue = 0.0,
+            isLowStepSizeReached = isLowStepSizeReached(step),
+            isHighStepSizeReached = isHighStepSizeReached(step),
+            freezeJacobiStepsCount = 0
+        )
+
+        executeStepHandlers(time, outY, state, statistic)
 
         while (time < endTime){
             step = normalizeStep(step, time, endTime)
 
-            checkStepCount(stepInfo.stepsCount)
+            checkStepCount(statistic.stepsCount)
 
-            if(freezeStepsCount == 0){
+            if(state.freezeJacobiStepsCount == 0){
                 if(isNeedFindJacobi){
-                    checkEvaluationCount(stepInfo.evaluationsCount)
+                    checkEvaluationCount(statistic.evaluationsCount)
                     equations(outY, vectorBuffer2)
-                    stepInfo.evaluationsCount++
+                    statistic.evaluationsCount++
                     outY.copyInto(vectorBuffer1)
                     for (i in vectorBuffer1.indices){
                         val r = max(1e-14, 1e-7*abs(outY[i]))
                         val jacobiColumn = jacobiMatrix.columns[i]
                         vectorBuffer1[i] += r
-                        checkEvaluationCount(stepInfo.evaluationsCount)
+                        checkEvaluationCount(statistic.evaluationsCount)
                         equations(vectorBuffer1, jacobiColumn)
-                        stepInfo.evaluationsCount++
+                        statistic.evaluationsCount++
                         for (j in jacobiColumn.indices){
                             jacobiColumn[j] = (jacobiColumn[j] - vectorBuffer2[j]) / r
                         }
                         vectorBuffer1[i] = outY[i]
                     }
-                    stepInfo.jacobiEvaluationsCount++
+                    statistic.jacobiEvaluationsCount++
                 } else{
                     isNeedFindJacobi = true
                 }
@@ -95,9 +100,9 @@ class MK22Integrator (val startEvaluationCount: Int,
             for (i in vectorBuffer1.indices){
                 vectorBuffer1[i] = outY[i]
             }
-            checkEvaluationCount(stepInfo.evaluationsCount)
+            checkEvaluationCount(statistic.evaluationsCount)
             equations(vectorBuffer1, vectorBuffer2)
-            stepInfo.evaluationsCount++
+            statistic.evaluationsCount++
             for (i in vectorBuffer2.indices){
                 vectorBuffer2[i] = step*vectorBuffer2[i]
             }
@@ -105,9 +110,9 @@ class MK22Integrator (val startEvaluationCount: Int,
             for (i in vectorBuffer1.indices){
                 vectorBuffer1[i] = outY[i] + beta*k1[i]
             }
-            checkEvaluationCount(stepInfo.evaluationsCount)
+            checkEvaluationCount(statistic.evaluationsCount)
             equations(vectorBuffer1, vectorBuffer2)
-            stepInfo.evaluationsCount++
+            statistic.evaluationsCount++
             for (i in vectorBuffer2.indices){
                 vectorBuffer2[i] = step*vectorBuffer2[i] + alpha*k1[i]
             }
@@ -132,19 +137,19 @@ class MK22Integrator (val startEvaluationCount: Int,
                 q2 = q1
             }
 
-            if (q2 < 1.0 && !stepInfo.isLowStepSizeReached && !stepInfo.isHighStepSizeReached){
-                if(freezeStepsCount == 0) {
+            if (q2 < 1.0 && !state.isLowStepSizeReached && !state.isHighStepSizeReached){
+                if(state.freezeJacobiStepsCount == 0) {
                     isNeedFindJacobi = false
                 } else {
-                    freezeStepsCount = 0
+                    state.freezeJacobiStepsCount = 0
                 }
 
                 step *= q2
 
-                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
-                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
+                state.isLowStepSizeReached = isLowStepSizeReached(step)
+                state.isHighStepSizeReached = isHighStepSizeReached(step)
 
-                stepInfo.returnsCount++
+                statistic.returnsCount++
 
                 continue
             }
@@ -154,22 +159,23 @@ class MK22Integrator (val startEvaluationCount: Int,
             }
 
             time += step
-            stepInfo.stepsCount++
+            statistic.stepsCount++
 
-            executeStepHandlers(time, outY, stepInfo)
+            executeStepHandlers(time, outY, state, statistic)
 
             val stepNew = min(q1, q2)*step
 
-            freezeStepsCount++
+            state.freezeJacobiStepsCount++
 
-            if(!(freezeStepsCount < maxFreezeSteps && stepNew < step * stepGrowthCoefficient && e1 <= e2)){
+            if(!(state.freezeJacobiStepsCount < maxFreezeSteps
+                        && stepNew < step * stepGrowthCoefficient && e1 <= e2)){
                 step = stepNew
-                freezeStepsCount = 0
+                state.freezeJacobiStepsCount = 0
 
-                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
-                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
+                state.isLowStepSizeReached = isLowStepSizeReached(step)
+                state.isHighStepSizeReached = isHighStepSizeReached(step)
             }
         }
-        return stepInfo
+        return statistic
     }
 }

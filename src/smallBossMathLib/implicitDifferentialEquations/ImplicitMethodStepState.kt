@@ -1,13 +1,11 @@
 package smallBossMathLib.implicitDifferentialEquations
 
-class ImplicitMethodStepState(
-    override val isLowStepSizeReached: Boolean,
-    override val isHighStepSizeReached: Boolean,
-    override val freezeJacobiStepsCount: Int
-) : IImplicitMethodStepState {
-    override val maxEigenvalue: Double
-        get() = TODO("Not yet implemented")
-    override val minEigenvalue: Double
-        get() = TODO("Not yet implemented")
+import smallBossMathLib.shared.Matrix2D
 
-}
+data class ImplicitMethodStepState(
+    override var isLowStepSizeReached: Boolean,
+    override var isHighStepSizeReached: Boolean,
+    override var maxEigenvalue: Double,
+    override var minEigenvalue: Double,
+    override var freezeJacobiStepsCount: Int
+) : IImplicitMethodStepState

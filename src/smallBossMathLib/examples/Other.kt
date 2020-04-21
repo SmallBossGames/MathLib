@@ -12,7 +12,7 @@ fun mk22Other2Test(){
         2.0,
         0.001)
 
-    solverRK2.addStepHandler { t, y, _ ->
+    solverRK2.addStepHandler { t, y, _, _ ->
         builder.append("${t};${y[0]};${y[1]};${y[2]} \n");
     }
     //solverRK2.enableEvaluationCountCheck(2000)
@@ -40,7 +40,7 @@ fun mk22Other3Test(){
         2.0,
         0.001)
 
-    solverRK2.addStepHandler {t, y, _ ->
+    solverRK2.addStepHandler {t, y, _, _ ->
         builder.append("${t};${y[0]};${y[1]};${y[2]};${y[3]} \n");
     }
     //solverRK2.enableEvaluationCountCheck(2000)
