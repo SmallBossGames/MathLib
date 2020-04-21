@@ -35,7 +35,7 @@ fun mainFunction(y: DoubleArray, outF: DoubleArray){
 
     val ud1 = y[3] - y[5] - y[7] - Uin2(t)
     val ud2 = -y[4] + y[6] - y[7] - Uin2(t)
-    val ud3 = y[4] + y[5] + y[7] - Uin2(t)
+    val ud3 = y[4] + y[5] + y[7] + Uin2(t)
     val ud4 = -y[3] - y[6] + y[7] + Uin2(t)
 
     outF[0] = 1.0
