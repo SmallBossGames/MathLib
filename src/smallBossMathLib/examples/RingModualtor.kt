@@ -86,16 +86,17 @@ fun ringModulatorMK22Example(){
         val output = DoubleArray(16)
         val rVector = DoubleArray(output.size) { 1e-7 }
 
+        var counter = 0
+
         out.appendln("t;timeFromIntegration;y2;isMinStepReached")
         integrator.addStepHandler(){ t, y, info ->
-            val str = "${t};${y[0]};${y[14]};${info.isLowStepSizeReached}"
-                .replace('.',',')
-
-            out.appendln(str)
+            if(counter % 5 == 0){
+                val str = "${t};${y[0]};${y[14]};${info.isLowStepSizeReached}"
+                    .replace('.',',')
+                out.appendln(str)
+            }
+           counter++
         }
-
-        integrator.enableStepCountLimit(50000)
-        //integrator.enableLowStepLimit(1e-30)
 
         try {
             integrator.integrate(0.0, output, 0.001, rVector, output, ::mainFunction)

@@ -23,7 +23,7 @@ class MK22Integrator (val startEvaluationCount: Int,
         t: Double,
         rVector: DoubleArray,
         outY: DoubleArray,
-        equations: (inY: DoubleArray, outF: DoubleArray) -> Unit) : IImplicitMethodStepInfo {
+        equations: (inY: DoubleArray, outF: DoubleArray) -> Unit) : IImplicitMethodStatistic {
 
         if (y0.size != outY.size)
             throw IllegalArgumentException()
@@ -46,7 +46,7 @@ class MK22Integrator (val startEvaluationCount: Int,
         var freezeStepsCount = 0
         var isNeedFindJacobi = true
 
-        val stepInfo = ImplicitMethodStepInfo(
+        val stepInfo = ImplicitMethodStatistic(
             isLowStepSizeReached = isLowStepSizeReached(step),
             isHighStepSizeReached = isHighStepSizeReached(step),
             stepsCount = 0,
@@ -62,33 +62,35 @@ class MK22Integrator (val startEvaluationCount: Int,
 
             checkStepCount(stepInfo.stepsCount)
 
-            if(freezeStepsCount == 0 && isNeedFindJacobi) {
-                checkEvaluationCount(stepInfo.evaluationsCount)
-                equations(outY, vectorBuffer2)
-                stepInfo.evaluationsCount++
-                outY.copyInto(vectorBuffer1)
-                for (i in vectorBuffer1.indices){
-                    val r = max(1e-14, 1e-7*abs(outY[i]))
-                    val jacobiColumn = jacobiMatrix.columns[i]
-                    vectorBuffer1[i] += r
+            if(freezeStepsCount == 0){
+                if(isNeedFindJacobi){
                     checkEvaluationCount(stepInfo.evaluationsCount)
-                    equations(vectorBuffer1, jacobiColumn)
+                    equations(outY, vectorBuffer2)
                     stepInfo.evaluationsCount++
-                    for (j in jacobiColumn.indices){
-                        jacobiColumn[j] = (jacobiColumn[j] - vectorBuffer2[j]) / r
+                    outY.copyInto(vectorBuffer1)
+                    for (i in vectorBuffer1.indices){
+                        val r = max(1e-14, 1e-7*abs(outY[i]))
+                        val jacobiColumn = jacobiMatrix.columns[i]
+                        vectorBuffer1[i] += r
+                        checkEvaluationCount(stepInfo.evaluationsCount)
+                        equations(vectorBuffer1, jacobiColumn)
+                        stepInfo.evaluationsCount++
+                        for (j in jacobiColumn.indices){
+                            jacobiColumn[j] = (jacobiColumn[j] - vectorBuffer2[j]) / r
+                        }
+                        vectorBuffer1[i] = outY[i]
                     }
-                    vectorBuffer1[i] = outY[i]
+                    stepInfo.jacobiEvaluationsCount++
+                } else{
+                    isNeedFindJacobi = true
                 }
-                stepInfo.jacobiEvaluationsCount++
-            } else {
-                isNeedFindJacobi = true
+
+                for (i in dMatrix.indices)
+                    for(j in dMatrix.indices)
+                        dMatrix[i, j] = (if (i == j) 1.0 else 0.0) - a*step*(jacobiMatrix[i,j])
+
+                dMatrix.makeLU()
             }
-
-            for (i in dMatrix.indices)
-                for(j in dMatrix.indices)
-                    dMatrix[i, j] = (if (i == j) 1.0 else 0.0) - a*step*(jacobiMatrix[i,j])
-
-            dMatrix.makeLU()
 
             for (i in vectorBuffer1.indices){
                 vectorBuffer1[i] = outY[i]

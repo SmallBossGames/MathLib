@@ -1,8 +1,5 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.implicitDifferentialEquations.ImplicitMethodStepInfo
-import smallBossMathLib.shared.Integrator
-import smallBossMathLib.shared.StepInfo
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.*
 
@@ -39,7 +36,7 @@ class RK4StabilityControlIntegrator(val evaluations: Int, val accuracy: Double) 
 
         val endTime = t0 + t
 
-        executeStepHandlers(t, y0, stepInfo)
+        executeStepHandlers(t0, y0, stepInfo)
 
         while (time < endTime) {
             step = normalizeStep(step, time, endTime)

@@ -22,6 +22,7 @@ class Matrix2D(val size: Int) {
     inline val indices get() = columns.indices
 
     operator fun get(x: Int, y: Int) = columns[y][x]
+
     operator fun set(x: Int, y: Int, value: Double) {
         columns[y][x] = value
     }
@@ -48,6 +49,26 @@ class Matrix2D(val size: Int) {
         for (i in this.indices)
             for (j in this.indices)
                 this[i, j] /= constant
+    }
+
+    fun multiply(vector: DoubleArray, outVector: DoubleArray){
+        if(outVector.size != vector.size || vector.size != size)
+            throw IllegalArgumentException()
+
+        for (i in outVector.indices){
+            outVector[i] = 0.0
+            for (j in outVector.indices){
+                outVector[i] += vector[j] * this[i, j]
+            }
+        }
+    }
+
+    fun multiply(matrix: Matrix2D, outMatrix: Matrix2D){
+        for (i in matrix.indices){
+            val outColumn = outMatrix.columns[i]
+            val column = matrix.columns[i]
+            multiply(column, outColumn)
+        }
     }
 
     fun makeLU(){
@@ -78,26 +99,6 @@ class Matrix2D(val size: Int) {
                     this[r, c] = this[r, c] - m * this[p, c]
                 }
             }
-        }
-    }
-
-    fun multiply(vector: DoubleArray, outVector: DoubleArray){
-        if(outVector.size != vector.size || vector.size != size)
-            throw IllegalArgumentException()
-
-        for (i in outVector.indices){
-            outVector[i] = 0.0
-            for (j in outVector.indices){
-                outVector[i] += vector[j] * this[i, j]
-            }
-        }
-    }
-
-    fun multiply(matrix: Matrix2D, outMatrix: Matrix2D){
-        for (i in matrix.indices){
-            val outColumn = outMatrix.columns[i]
-            val column = matrix.columns[i]
-            multiply(column, outColumn)
         }
     }
 

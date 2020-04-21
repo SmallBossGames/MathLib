@@ -1,6 +1,6 @@
 package smallBossMathLib.implicitDifferentialEquations
 
-interface IImplicitMethodStepInfo {
+interface IImplicitMethodStatistic {
     val isLowStepSizeReached:Boolean
     val isHighStepSizeReached: Boolean
     val stepsCount: Int
