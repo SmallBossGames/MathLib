@@ -57,24 +57,6 @@ fun mainFunction(y: DoubleArray, outF: DoubleArray){
     outF[15] = (1.0 / Ls1) * (-y[2] - (Rc + Rg1) * y[15])
 }
 
-fun ringModulatorRK2Example(){
-    val integrator = RK23StabilityControlIntegrator( 10000, 0.01)
-    val builder = StringBuilder()
-    val output = DoubleArray(15) {0.0}
-
-    integrator.addStepHandler(){
-        t, y, info -> builder.append("${t};${y[13]} \n")
-    }
-
-    integrator.enableStepCountLimit(20000)
-
-    integrator.integrate(0.0, output, 0.001, output, ::mainFunction)
-
-    val writingText = builder.replace(Regex("[.]"), ",")
-
-    File("data_modulator_test.csv ").writeText(writingText)
-}
-
 fun ringModulatorMK22Example(){
     val integrator = MK22Integrator(
         100,
@@ -88,18 +70,60 @@ fun ringModulatorMK22Example(){
 
         var counter = 0
 
-        out.appendln("t;timeFromIntegration;y2;isMinStepReached")
-        integrator.addStepHandler(){ t, y, state, _ ->
+        out.append("stiffness;t;")
+
+        for (i in 1..15)
+            out.append("y$i;")
+
+        out.appendln()
+
+        integrator.addStepHandler(){ _, y, state, _ ->
             if(counter % 5 == 0){
-                val str = "${t};${y[0]};${y[14]};${state.isLowStepSizeReached}"
-                    .replace('.',',')
-                out.appendln(str)
+                val stiffness = state.maxEigenvalue / state.minEigenvalue
+                out.append("$stiffness;".replace('.',','))
+                for (item in y)
+                    out.append("$item;".replace('.',','))
+                out.appendln()
             }
            counter++
         }
 
         try {
             integrator.integrate(0.0, output, 0.001, rVector, output, ::mainFunction)
+        } catch (ex: ExceedingLimitEvaluationsException){
+            println(ex.message)
+        } catch (ex: ExceedingLimitStepsException){
+            println(ex.message)
+        }
+    }
+}
+
+fun ringModulatorRK23ST() {
+    val integrator = RK23StabilityControlIntegrator(100, 0.001)
+    File("RingModulator.rk23st.csv ").bufferedWriter().use { out ->
+        val output = DoubleArray(16)
+        val rVector = DoubleArray(output.size) { 1e-7 }
+
+        var counter = 0
+
+        out.append("t;")
+
+        for (i in 1..15)
+            out.append("y$i;")
+
+        out.appendln()
+
+        integrator.addStepHandler(){ _, y, state ->
+            //if(counter % 5 == 0){
+                for (item in y)
+                    out.append("$item;".replace('.',','))
+                out.appendln()
+            //}
+            counter++
+        }
+
+        try {
+            integrator.integrate(0.0, output, 0.0001, output, ::mainFunction)
         } catch (ex: ExceedingLimitEvaluationsException){
             println(ex.message)
         } catch (ex: ExceedingLimitStepsException){

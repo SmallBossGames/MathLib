@@ -69,6 +69,8 @@ class MK22Integrator (val startEvaluationCount: Int,
 
             if(state.freezeJacobiStepsCount == 0){
                 if(isNeedFindJacobi){
+                    state.maxEigenvalue = 0.0
+                    state.minEigenvalue = Double.POSITIVE_INFINITY
                     checkEvaluationCount(statistic.evaluationsCount)
                     equations(outY, vectorBuffer2)
                     statistic.evaluationsCount++
@@ -76,14 +78,18 @@ class MK22Integrator (val startEvaluationCount: Int,
                     for (i in vectorBuffer1.indices){
                         val r = max(1e-14, 1e-7*abs(outY[i]))
                         val jacobiColumn = jacobiMatrix.columns[i]
+                        var evalEigenvalue = 0.0
                         vectorBuffer1[i] += r
                         checkEvaluationCount(statistic.evaluationsCount)
                         equations(vectorBuffer1, jacobiColumn)
                         statistic.evaluationsCount++
                         for (j in jacobiColumn.indices){
                             jacobiColumn[j] = (jacobiColumn[j] - vectorBuffer2[j]) / r
+                            evalEigenvalue += abs(jacobiColumn[j])
                         }
                         vectorBuffer1[i] = outY[i]
+                        state.maxEigenvalue = max(evalEigenvalue, state.maxEigenvalue)
+                        state.minEigenvalue = min(evalEigenvalue, state.minEigenvalue)
                     }
                     statistic.jacobiEvaluationsCount++
                 } else{
