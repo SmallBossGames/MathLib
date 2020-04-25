@@ -1,6 +1,8 @@
 package smallBossMathLib.shared
 
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 class Matrix2D(val size: Int) {
     companion object{
@@ -69,6 +71,41 @@ class Matrix2D(val size: Int) {
             val column = matrix.columns[i]
             multiply(column, outColumn)
         }
+    }
+
+    fun evalMaxEigenvalue(): Double {
+        var max = 0.0
+        for(column in columns){
+            var sum = 0.0
+            for(value in column)
+                sum += value
+            max = max(abs(sum), max)
+        }
+        return max
+    }
+
+    fun evalMinEigenvalue(): Double {
+        var min = Double.POSITIVE_INFINITY
+        for(column in columns){
+            var sum = 0.0
+            for(value in column)
+                sum += value
+            min = min(abs(sum), min)
+        }
+        return min
+    }
+
+    fun evalStiffness(): Double {
+        var max = 0.0
+        var min = Double.POSITIVE_INFINITY
+        for(column in columns){
+            var sum = 0.0
+            for(value in column)
+                sum += abs(value)
+            max = max(sum, max)
+            min = min(sum, min)
+        }
+        return max / min
     }
 
     fun makeLU(){

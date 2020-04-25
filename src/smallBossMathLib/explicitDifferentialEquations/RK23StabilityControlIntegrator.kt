@@ -25,7 +25,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
         y0: DoubleArray,
         t: Double,
         outY: DoubleArray,
-        equations: (inY: DoubleArray, outY: DoubleArray) -> Unit
+        equations: (t: Double, inY: DoubleArray, outY: DoubleArray) -> Unit
     ) : IExplicitMethodStepInfo {
         y0.copyInto(outY)
 
@@ -55,10 +55,12 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
         executeStepHandlers(time, outY, stepInfo)
 
-        equations(outY, fLastBuffer)
+        equations(time, outY, fLastBuffer)
         stepInfo.evaluationsCount++;
 
         while (time < endTime) {
+            checkStepCount(stepInfo.stepsCount)
+
             step = normalizeStep(step, time, endTime)
 
             for (i in fLastBuffer.indices) {
@@ -66,7 +68,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
                 yNextBuffer[i] = outY[i] + beta21 * k1[i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + alpha2, yNextBuffer, fCurrentBuffer)
             stepInfo.evaluationsCount++;
 
             for (i in fCurrentBuffer.indices) {
@@ -74,7 +76,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
                 yNextBuffer[i] = outY[i] + beta31 * k1[i] + beta32 * k2[i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + alpha3, yNextBuffer, fCurrentBuffer)
             stepInfo.evaluationsCount++;
 
             for (i in fCurrentBuffer.indices) {
@@ -82,8 +84,8 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
                 yNextBuffer[i] = outY[i] + p1 * k1[i] + p2 * k2[i] + p3 * k3[i]
             }
             
-            equations(yNextBuffer, fCurrentBuffer)
-            stepInfo.evaluationsCount++;
+            equations(time + step, yNextBuffer, fCurrentBuffer)
+            stepInfo.evaluationsCount++
 
             for (i in fLastBuffer.indices){
                 vectorBuffer1[i] = k2[i] - k1[i]
@@ -175,7 +177,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
     private fun findR(k1: DoubleArray, k2: DoubleArray, k3: DoubleArray) : Double {
         var max = 0.0
         for (i in k1.indices){
-            max = max(abs((k3[i] - k2[i]) / (k2[i] - k1[i])), max)
+            max = max(abs((k3[i] - k2[i] + v) / (k2[i] - k1[i] + v)), max)
         }
 
         return 2.0/max

@@ -11,10 +11,10 @@ const val p2 = 0.5/a
 const val beta = 0.29289321881
 const val alpha = -2*a
 
-class MK22Integrator (val startEvaluationCount: Int,
+class MK22Integrator (val defaultStep: Double,
+                      val accuracy: Double,
                       val maxFreezeSteps: Int,
-                      val stepGrowthCoefficient: Double,
-                      val accuracy: Double) : ImplicitIntegrator() {
+                      val stepGrowthCoefficient: Double) : ImplicitIntegrator() {
 
     @Throws(ExceedingLimitStepsException::class, ExceedingLimitEvaluationsException::class)
     fun integrate(
@@ -41,7 +41,7 @@ class MK22Integrator (val startEvaluationCount: Int,
         val dMatrix = Matrix2D(y0.size)
         val jacobiMatrix = Matrix2D(y0.size)
 
-        var step = t / startEvaluationCount
+        var step = defaultStep
         var time = t0
         var isNeedFindJacobi = true
 
@@ -53,8 +53,7 @@ class MK22Integrator (val startEvaluationCount: Int,
         )
 
         val state = ImplicitMethodStepState(
-            maxEigenvalue = 0.0,
-            minEigenvalue = 0.0,
+            jacobiMatrix = jacobiMatrix,
             isLowStepSizeReached = isLowStepSizeReached(step),
             isHighStepSizeReached = isHighStepSizeReached(step),
             freezeJacobiStepsCount = 0
@@ -69,27 +68,21 @@ class MK22Integrator (val startEvaluationCount: Int,
 
             if(state.freezeJacobiStepsCount == 0){
                 if(isNeedFindJacobi){
-                    state.maxEigenvalue = 0.0
-                    state.minEigenvalue = Double.POSITIVE_INFINITY
                     checkEvaluationCount(statistic.evaluationsCount)
                     equations(outY, vectorBuffer2)
-                    statistic.evaluationsCount++
+                    // statistic.evaluationsCount++
                     outY.copyInto(vectorBuffer1)
                     for (i in vectorBuffer1.indices){
                         val r = max(1e-14, 1e-7*abs(outY[i]))
                         val jacobiColumn = jacobiMatrix.columns[i]
-                        var evalEigenvalue = 0.0
                         vectorBuffer1[i] += r
                         checkEvaluationCount(statistic.evaluationsCount)
                         equations(vectorBuffer1, jacobiColumn)
-                        statistic.evaluationsCount++
+                        //statistic.evaluationsCount++
                         for (j in jacobiColumn.indices){
                             jacobiColumn[j] = (jacobiColumn[j] - vectorBuffer2[j]) / r
-                            evalEigenvalue += abs(jacobiColumn[j])
                         }
                         vectorBuffer1[i] = outY[i]
-                        state.maxEigenvalue = max(evalEigenvalue, state.maxEigenvalue)
-                        state.minEigenvalue = min(evalEigenvalue, state.minEigenvalue)
                     }
                     statistic.jacobiEvaluationsCount++
                 } else{
@@ -129,7 +122,7 @@ class MK22Integrator (val startEvaluationCount: Int,
             }
 
             val e1 = zeroSafetyNorm(vectorBuffer1, outY, rVector)
-            val q1 = sqrt(accuracy*(abs(a-2*a*a)/abs(a - 1.0/3.0)) / e1)
+            val q1 = sqrt(accuracy / e1)
 
             val e2: Double
             val q2: Double
@@ -137,7 +130,7 @@ class MK22Integrator (val startEvaluationCount: Int,
                 dMatrix.inverseLU(matrixBuffer)
                 matrixBuffer.multiply(vectorBuffer1, vectorBuffer2)
                 e2 = zeroSafetyNorm(vectorBuffer2, outY, rVector)
-                q2 = sqrt(accuracy*(abs(a-2*a*a)/abs(a - 1.0/3.0)) / e2)
+                q2 = sqrt(accuracy / e2)
             } else {
                 e2 = e1
                 q2 = q1
@@ -176,10 +169,13 @@ class MK22Integrator (val startEvaluationCount: Int,
             if(!(state.freezeJacobiStepsCount < maxFreezeSteps
                         && stepNew < step * stepGrowthCoefficient && e1 <= e2)){
                 step = stepNew
+                
                 state.freezeJacobiStepsCount = 0
-
                 state.isLowStepSizeReached = isLowStepSizeReached(step)
                 state.isHighStepSizeReached = isHighStepSizeReached(step)
+            } else {
+                state.isHighStepSizeReached = false
+                state.isLowStepSizeReached = false
             }
         }
         return statistic

@@ -68,13 +68,13 @@ abstract class Integrator {
     //Right part evaluations control
 
     fun enableEvaluationsCountLimit(maxEvaluations: Int){
-        isStepCountLimitEnabled = true
-        maxStepCount = maxEvaluations
+        isEvaluationsCountLimitEnabled = true
+        maxEvaluationsCount = maxEvaluations
     }
 
     fun disableEvaluationsCountLimit(){
-        isStepCountLimitEnabled = false
-        maxStepCount = 0
+        isEvaluationsCountLimitEnabled = false
+        maxEvaluationsCount = 0
     }
 
     fun enableHighStepLimit(max: Double){

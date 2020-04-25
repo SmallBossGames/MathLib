@@ -16,39 +16,19 @@ fun pseudoVanDerPaul(mu: Double, inY: DoubleArray, outF:DoubleArray){
     outF[1] = ((1.0 - inY[0] * inY[1])*inY[1] - inY[0]) / mu
 }
 
-fun rungeKuttaSecondOrderExample(p: Double)
-{
-    val builder = StringBuilder()
-    val solverRK2 = RK23StabilityControlIntegrator(100,0.01)
-    solverRK2.addStepHandler { t, y, _ ->  builder.append("${y[0]};${y[1]} \n");}
-    solverRK2.enableStepCountLimit(10000)
-
-    val output = doubleArrayOf(2.0, 0.0)
-
-    solverRK2.integrate(0.0, output,20.0, output)
-    { inY: DoubleArray, outY: DoubleArray ->
-        outY[0] = inY[1]
-        outY[1] = ((1.0 - inY[0] * inY[1])*inY[1] - inY[0]) / p
-    }
-
-    val writingText = builder.replace(Regex("[.]"), ",")
-
-    File("VanDerPaul(p = ${p}).csv ").writeText(writingText)
-}
-
 fun mk22VdPExample(mu: Double)
 {
     val solver = MK22Integrator(
-        10000,
-        0,
-        0.0,
-        0.001)
+        1e-3,
+        0.001,
+        20,
+        2.0)
 
     File("VanDerPaul(mu = ${mu}).csv ").bufferedWriter().use { out ->
-        out.appendln("t;y1;y2;maxEigenvalue;minEigenvalue;stiffnessCoefficient")
+        out.appendln("t;y1;y2;stiffnessCoefficient")
         solver.addStepHandler { t, y, state, _ ->
-            val stiffness = state.maxEigenvalue / state.minEigenvalue
-            val str = "${t};${y[0]};${y[1]};${state.maxEigenvalue};${state.minEigenvalue};$stiffness"
+            val stiffness = state.jacobiMatrix.evalStiffness()
+            val str = "${t};${y[0]};${y[1]};$stiffness"
                 .replace('.', ',')
             out.appendln(str);
         }
@@ -58,7 +38,7 @@ fun mk22VdPExample(mu: Double)
 
         try {
             val result = solver.integrate(0.0, output,20.0, rVector, output)
-            {inY: DoubleArray, outY: DoubleArray ->
+            {inY, outY ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
             }
@@ -84,7 +64,7 @@ fun rk2stVdPExample(mu: Double){
 
         try {
             val result = solverRK2.integrate(0.0, output,20.0, output)
-            { inY: DoubleArray, outY: DoubleArray ->
+            { _, inY, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
             }
@@ -183,16 +163,16 @@ fun rkm4VdPExample(mu: Double){
 fun mk22VdPAlternateExample(p: Double)
 {
     val solver = MK22Integrator(
-        10000,
+        1e-3,
+        0.001,
         0,
-        0.0,
-        0.01)
+        0.0)
 
     File("VanDerPaul(p = ${p}).mk22.csv ").bufferedWriter().use { out ->
-        out.appendln("t;y1;y2;maxEigenvalue;minEigenvalue;stiffnessCoefficient")
+        out.appendln("t;y1;y2;stiffnessCoefficient")
         solver.addStepHandler { t, y, state, _ ->
-            val stiffness = state.maxEigenvalue / state.minEigenvalue
-            val str = "${t};${y[0]};${y[1]};${state.maxEigenvalue};${state.minEigenvalue};$stiffness"
+            val stiffness = state.jacobiMatrix.evalStiffness()
+            val str = "${t};${y[0]};${y[1]};$stiffness"
                 .replace('.', ',')
 
             out.appendln(str);
