@@ -20,7 +20,7 @@ fun mk22VdPExample(mu: Double)
 {
     val solver = MK22Integrator(
         1e-3,
-        0.001,
+        0.01,
         20,
         2.0)
 
@@ -30,7 +30,7 @@ fun mk22VdPExample(mu: Double)
             val stiffness = state.jacobiMatrix.evalStiffness()
             val str = "${t};${y[0]};${y[1]};$stiffness"
                 .replace('.', ',')
-            out.appendln(str);
+            out.appendln(str)
         }
 
         val output = doubleArrayOf(2.0, 0.0)
@@ -52,10 +52,10 @@ fun mk22VdPExample(mu: Double)
 }
 
 fun rk2stVdPExample(mu: Double){
-    val solverRK2 = RK23StabilityControlIntegrator(100,0.01)
+    val solverRK2 = RK23StabilityControlIntegrator(1e-3,0.01)
 
     File("VanDerPaul(mu = $mu).rk23st.csv ").bufferedWriter().use { out ->
-        solverRK2.addStepHandler { t, y, _ ->
+        solverRK2.addStepHandler { t, y, _, _ ->
             val str = "${t};${y[0]};${y[1]}".replace('.', ',')
             out.appendln(str)
         }
@@ -78,10 +78,10 @@ fun rk2stVdPExample(mu: Double){
 }
 
 fun rk2VdPExample(mu: Double){
-    val solverRK2 = RK23Integrator(100,0.01)
+    val solverRK2 = RK23Integrator(1e-3,0.01)
 
     File("VanDerPaul(mu = $mu).rk23.csv ").bufferedWriter().use { out ->
-        solverRK2.addStepHandler {t, y, _ ->
+        solverRK2.addStepHandler {t, y, _, _ ->
             val str = "${t};${y[0]};${y[1]}".replace('.', ',')
             out.appendln(str)
         }
@@ -106,10 +106,10 @@ fun rk2VdPExample(mu: Double){
 
 
 fun rk4stVdPExample(mu: Double){
-    val solverRK2 = RK4StabilityControlIntegrator(100,0.01)
+    val solverRK2 = RK4StabilityControlIntegrator(1e-3,0.01)
 
     File("VanDerPaul(mu = $mu).rk45st.csv ").bufferedWriter().use { out ->
-        solverRK2.addStepHandler { t, y, _ ->
+        solverRK2.addStepHandler { t, y, _, _ ->
             val str = "${t};${y[0]};${y[1]}".replace('.', ',')
             out.appendln(str)
         }
@@ -132,10 +132,10 @@ fun rk4stVdPExample(mu: Double){
 }
 
 fun rkm4VdPExample(mu: Double){
-    val solverRK2 = RKM4Integrator(100,0.01)
+    val solverRK2 = RKM4Integrator(1e-3,0.01)
 
     File("VanDerPaul(mu = $mu).rkm4.csv ").bufferedWriter().use { out ->
-        solverRK2.addStepHandler { t, y, _ ->
+        solverRK2.addStepHandler { t, y, _, _ ->
             val str = "${t};${y[0]};${y[1]}".replace('.', ',')
             out.appendln(str)
         }
@@ -163,8 +163,8 @@ fun rkm4VdPExample(mu: Double){
 fun mk22VdPAlternateExample(p: Double)
 {
     val solver = MK22Integrator(
-        1e-3,
-        0.001,
+        1e-2,
+        0.01,
         0,
         0.0)
 
@@ -175,7 +175,7 @@ fun mk22VdPAlternateExample(p: Double)
             val str = "${t};${y[0]};${y[1]};$stiffness"
                 .replace('.', ',')
 
-            out.appendln(str);
+            out.appendln(str)
         }
         solver.enableStepCountLimit(20000)
 
@@ -198,13 +198,13 @@ fun mk22VdPAlternateExample(p: Double)
 
 fun eulerVdPAlternateExample(p: Double)
 {
-    val solver = EulerIntegrator(10000, 0.01)
+    val solver = EulerIntegrator(1e-3, 0.01)
 
     File("VanDerPaul(p = ${p}).csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
-        solver.addStepHandler { t, y, _ ->
+        solver.addStepHandler { t, y, _, _ ->
             val str = "${t};${y[0]};${y[1]}".replace('.', ',')
-            out.appendln(str);
+            out.appendln(str)
         }
         solver.enableStepCountLimit(20000)
 
@@ -226,15 +226,13 @@ fun eulerVdPAlternateExample(p: Double)
 
 fun eulerVdPExample(mu: Double)
 {
-    val solver = EulerIntegrator(
-        10000,
-        0.01)
+    val solver = EulerIntegrator(1e-3, 0.01)
 
     File("VanDerPaul(mu = ${mu}).euler.csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
-        solver.addStepHandler { t, y, _ ->
+        solver.addStepHandler { t, y, _, _ ->
             val str = "${t};${y[0]};${y[1]}".replace('.', ',')
-            out.appendln(str);
+            out.appendln(str)
         }
         solver.enableStepCountLimit(20000)
 

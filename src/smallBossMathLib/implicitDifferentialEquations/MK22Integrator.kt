@@ -122,7 +122,7 @@ class MK22Integrator (val defaultStep: Double,
             }
 
             val e1 = zeroSafetyNorm(vectorBuffer1, outY, rVector)
-            val q1 = sqrt(accuracy / e1)
+            val q1 = sqrt(accuracy * 3 / e1)
 
             val e2: Double
             val q2: Double
@@ -130,7 +130,7 @@ class MK22Integrator (val defaultStep: Double,
                 dMatrix.inverseLU(matrixBuffer)
                 matrixBuffer.multiply(vectorBuffer1, vectorBuffer2)
                 e2 = zeroSafetyNorm(vectorBuffer2, outY, rVector)
-                q2 = sqrt(accuracy / e2)
+                q2 = sqrt(accuracy * 3 / e2)
             } else {
                 e2 = e1
                 q2 = q1

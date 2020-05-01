@@ -58,7 +58,7 @@ fun main() {
 
     //rk2VdPExample(6.0)
     
-    ringModulatorMK22Example()
+    //ringModulatorMK22Example()
     //ringModulatorRK23ST()
 
     //mk22Other2Test()
@@ -71,17 +71,19 @@ fun main() {
     //mk22VdPAlternateExample(0.75e-2)
     //mk22VdPAlternateExample(1.5e-2)
 
+
     //mk22VdPAlternateExample(3e-2)
 
-    //mk22VdPExample(6.0)
+    //mk22VdPExample(0.01)
+    mk22VdPExample(6.0)
 
-    //eulerVdPExample(6.0)
+    eulerVdPExample(6.0)
 
-    //rk2stVdPExample(6.0)
+    rk2stVdPExample(6.0)
 
-    //rk2VdPExample(6.0)
+    rk2VdPExample(6.0)
 
-    //rk4stVdPExample(6.0)
+    rk4stVdPExample(6.0)
 
-    //rkm4VdPExample(6.0)
+    rkm4VdPExample(6.0)
 }

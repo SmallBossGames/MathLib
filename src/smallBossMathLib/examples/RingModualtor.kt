@@ -115,7 +115,7 @@ fun ringModulatorMK22Example(){
         }
 
         try {
-            val stat = integrator.integrate(0.0, output, 0.001, rVector, output, ::mainFunction)
+            val stat = integrator.integrate(0.0, output, 0.0012, rVector, output, ::mainFunction)
             println(stat.toString())
         } catch (ex: ExceedingLimitEvaluationsException){
             println(ex.message)
@@ -126,7 +126,7 @@ fun ringModulatorMK22Example(){
 }
 
 fun ringModulatorRK23ST() {
-    val integrator = RK23StabilityControlIntegrator(100, 0.001)
+    val integrator = RK23StabilityControlIntegrator(1e-5, 0.001)
     integrator.enableStepCountLimit(50000)
 
     File("RingModulator.rk23st.csv").bufferedWriter().use { out ->
@@ -142,7 +142,7 @@ fun ringModulatorRK23ST() {
 
         out.appendln()
 
-        integrator.addStepHandler(){ t, y, state ->
+        integrator.addStepHandler(){ t, y, state, _ ->
             if(counter % 5 == 0){
                 out.append("$t;")
                 for (item in y)

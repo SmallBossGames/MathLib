@@ -1,12 +1,10 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.shared.Integrator
-import smallBossMathLib.shared.StepInfo
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.sqrt
 
 
-class EulerIntegrator(val startEvaluations: Int,
+class EulerIntegrator(val defaultStep: Double,
                       val accuracy: Double) : ExplicitIntegrator() {
     fun integrate(
         t0: Double,
@@ -14,7 +12,7 @@ class EulerIntegrator(val startEvaluations: Int,
         t: Double,
         outY: DoubleArray,
         equations: (y: DoubleArray, f: DoubleArray) -> Unit
-    ) : IExplicitMethodStepInfo {
+    ) : IExplicitMethodStatistic {
         y0.copyInto(outY)
 
         var fCurrentBuffer = DoubleArray(y0.size)
@@ -25,19 +23,22 @@ class EulerIntegrator(val startEvaluations: Int,
         val vectorBuffer = DoubleArray(y0.size)
 
         var time = t0
-        var step = t / startEvaluations
+        var step = defaultStep
 
         val endTime = time+t
 
-        val stepInfo = ExplicitMethodStepInfo(
-            isLowStepSizeReached = isLowStepSizeReached(step),
-            isHighStepSizeReached = isHighStepSizeReached(step),
+        val statistic = ExplicitMethodStatistic(
             stepsCount = 0,
             evaluationsCount = 0,
             returnsCount = 0
         )
 
-        executeStepHandlers(time, outY, stepInfo)
+        val state = ExplicitMethodStepState(
+            isLowStepSizeReached = isLowStepSizeReached(step),
+            isHighStepSizeReached = isHighStepSizeReached(step)
+        )
+
+        executeStepHandlers(time, outY, state, statistic)
 
         equations(outY, fCurrentBuffer)
 
@@ -50,7 +51,7 @@ class EulerIntegrator(val startEvaluations: Int,
 
             equations(yNextBuffer, fNextBuffer)
 
-            stepInfo.evaluationsCount++
+            statistic.evaluationsCount++
 
             for (i in vectorBuffer.indices){
                 vectorBuffer[i] = fNextBuffer[i] - fCurrentBuffer[i]
@@ -59,12 +60,12 @@ class EulerIntegrator(val startEvaluations: Int,
             val errNorm = 0.5 * step * zeroSafetyNorm(vectorBuffer, outY, 1e-7)
             val q = sqrt(accuracy / errNorm)
 
-            if(q < 1.0 && !stepInfo.isLowStepSizeReached && !stepInfo.isHighStepSizeReached){
+            if(q < 1.0 && !state.isLowStepSizeReached && !state.isHighStepSizeReached){
                 step = q * step / 1.1
 
-                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
-                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
-                stepInfo.returnsCount++
+                state.isLowStepSizeReached = isLowStepSizeReached(step)
+                state.isHighStepSizeReached = isHighStepSizeReached(step)
+                statistic.returnsCount++
             }
             else {
                 for (i in outY.indices){
@@ -73,21 +74,21 @@ class EulerIntegrator(val startEvaluations: Int,
 
                 time += step
 
-                stepInfo.stepsCount++
+                statistic.stepsCount++
 
-                executeStepHandlers(time, outY, stepInfo)
+                executeStepHandlers(time, outY, state, statistic)
 
                 step = q * step / 1.1
 
-                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
-                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
+                state.isLowStepSizeReached = isLowStepSizeReached(step)
+                state.isHighStepSizeReached = isHighStepSizeReached(step)
 
                 val temp = fCurrentBuffer
                 fCurrentBuffer = fNextBuffer
                 fNextBuffer = temp
             }
         }
-        return stepInfo
+        return statistic
     }
 
 }

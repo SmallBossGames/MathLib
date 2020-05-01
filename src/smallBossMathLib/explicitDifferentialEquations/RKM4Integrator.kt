@@ -1,10 +1,8 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.shared.Integrator
-import smallBossMathLib.shared.StepInfo
 import kotlin.math.abs
 
-class RKM4Integrator(val evaluations: Int, val accuracy: Double) : ExplicitIntegrator() {
+class RKM4Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIntegrator() {
     fun integrate(
         t0: Double,
         y0: DoubleArray,
@@ -12,7 +10,7 @@ class RKM4Integrator(val evaluations: Int, val accuracy: Double) : ExplicitInteg
         rVector:DoubleArray,
         outY: DoubleArray,
         equations: (y: DoubleArray, outF: DoubleArray) -> Unit
-    ) : IExplicitMethodStepInfo {
+    ) : IExplicitMethodStatistic {
         y0.copyInto(outY)
 
         val fCurrentBuffer = DoubleArray(y0.size)
@@ -22,25 +20,28 @@ class RKM4Integrator(val evaluations: Int, val accuracy: Double) : ExplicitInteg
         val k = Array(5){ DoubleArray(y0.size) }
 
         var time = t0
-        var step = t / evaluations
+        var step = defaultStep
 
         val endTime = t0 + t
 
-        val stepInfo = ExplicitMethodStepInfo(
-            isLowStepSizeReached = isLowStepSizeReached(step),
-            isHighStepSizeReached = isHighStepSizeReached(step),
+        val statistic = ExplicitMethodStatistic(
             stepsCount = 0,
             evaluationsCount = 0,
             returnsCount = 0
         )
 
-        executeStepHandlers(time, outY, stepInfo)
+        val state = ExplicitMethodStepState(
+            isLowStepSizeReached = isLowStepSizeReached(step),
+            isHighStepSizeReached = isHighStepSizeReached(step)
+        )
+
+        executeStepHandlers(time, outY, state, statistic)
 
         mainLoop@ while (time < endTime) {
             step = normalizeStep(step, time, endTime)
 
             equations(outY, fCurrentBuffer)
-            stepInfo.evaluationsCount++
+            statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k[0][i] = step * fCurrentBuffer[i]
@@ -48,7 +49,7 @@ class RKM4Integrator(val evaluations: Int, val accuracy: Double) : ExplicitInteg
             }
 
             equations(yNextBuffer, fCurrentBuffer)
-            stepInfo.evaluationsCount++
+            statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k[1][i] = step * fCurrentBuffer[i]
@@ -56,7 +57,7 @@ class RKM4Integrator(val evaluations: Int, val accuracy: Double) : ExplicitInteg
             }
 
             equations(yNextBuffer, fCurrentBuffer)
-            stepInfo.evaluationsCount++
+            statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k[2][i] = step * fCurrentBuffer[i]
@@ -64,7 +65,7 @@ class RKM4Integrator(val evaluations: Int, val accuracy: Double) : ExplicitInteg
             }
 
             equations(yNextBuffer, fCurrentBuffer)
-            stepInfo.evaluationsCount++
+            statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k[3][i] = step * fCurrentBuffer[i]
@@ -72,7 +73,7 @@ class RKM4Integrator(val evaluations: Int, val accuracy: Double) : ExplicitInteg
             }
 
             equations(yNextBuffer, fCurrentBuffer)
-            stepInfo.evaluationsCount++
+            statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k[4][i] = step * fCurrentBuffer[i]
@@ -82,12 +83,12 @@ class RKM4Integrator(val evaluations: Int, val accuracy: Double) : ExplicitInteg
                 vectorBuffer1[i] = abs((2.0*k[0][i] - 9.0*k[2][i] + 8.0*k[3][i] - k[4][i]) / 30.0)
             }
 
-            if(!stepInfo.isLowStepSizeReached){
+            if(!state.isLowStepSizeReached){
                 for(i in vectorBuffer1.indices){
                     if(abs(outY[i]) > rVector[i] && vectorBuffer1[i] >= accuracy*abs(outY[i])){
                         step /= 2.0
-                        stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
-                        stepInfo.returnsCount++
+                        state.isLowStepSizeReached = isLowStepSizeReached(step)
+                        statistic.returnsCount++
                         continue@mainLoop
                     }
                 }
@@ -99,20 +100,20 @@ class RKM4Integrator(val evaluations: Int, val accuracy: Double) : ExplicitInteg
 
             time += step
 
-            stepInfo.stepsCount++
+            statistic.stepsCount++
 
-            executeStepHandlers(time, outY, stepInfo)
+            executeStepHandlers(time, outY, state, statistic)
 
-            if (!stepInfo.isHighStepSizeReached) {
+            if (!state.isHighStepSizeReached) {
                 for (i in vectorBuffer1.indices) {
                     if(vectorBuffer1[i] > accuracy*abs(outY[i]) / 32.0){
                         continue@mainLoop
                     }
                 }
                 step *= 2.0
-                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
+                state.isHighStepSizeReached = isHighStepSizeReached(step)
             }
         }
-        return stepInfo
+        return statistic
     }
 }

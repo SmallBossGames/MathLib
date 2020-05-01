@@ -1,7 +1,5 @@
 package smallBossMathLib.explicitDifferentialEquations
 
-import smallBossMathLib.shared.Integrator
-import smallBossMathLib.shared.StepInfo
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.*
 
@@ -17,7 +15,7 @@ private const val p3 = 27.0/56.0
 
 private const val v = 1e-7
 
-class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
+class RK23StabilityControlIntegrator(val defaultStep: Double, val accuracy: Double)
     : ExplicitIntegrator()
 {
     fun integrate(
@@ -26,7 +24,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
         t: Double,
         outY: DoubleArray,
         equations: (t: Double, inY: DoubleArray, outY: DoubleArray) -> Unit
-    ) : IExplicitMethodStepInfo {
+    ) : IExplicitMethodStatistic {
         y0.copyInto(outY)
 
         var fCurrentBuffer = DoubleArray(y0.size)
@@ -41,25 +39,28 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
         val k3 = DoubleArray(y0.size)
 
         var time = t0
-        var step = t / evaluations
+        var step = defaultStep
 
         val endTime = t0 + t
 
-        val stepInfo = ExplicitMethodStepInfo(
-            isLowStepSizeReached = isLowStepSizeReached(step),
-            isHighStepSizeReached = isHighStepSizeReached(step),
+        val statistic = ExplicitMethodStatistic(
             stepsCount = 0,
             evaluationsCount = 0,
             returnsCount = 0
         )
 
-        executeStepHandlers(time, outY, stepInfo)
+        val state = ExplicitMethodStepState(
+            isLowStepSizeReached = isLowStepSizeReached(step),
+            isHighStepSizeReached = isHighStepSizeReached(step)
+        )
+
+        executeStepHandlers(time, outY, state, statistic)
 
         equations(time, outY, fLastBuffer)
-        stepInfo.evaluationsCount++;
+        statistic.evaluationsCount++
 
         while (time < endTime) {
-            checkStepCount(stepInfo.stepsCount)
+            checkStepCount(statistic.stepsCount)
 
             step = normalizeStep(step, time, endTime)
 
@@ -69,7 +70,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             }
 
             equations(time + alpha2, yNextBuffer, fCurrentBuffer)
-            stepInfo.evaluationsCount++;
+            statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k2[i] = step * fCurrentBuffer[i]
@@ -77,7 +78,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             }
 
             equations(time + alpha3, yNextBuffer, fCurrentBuffer)
-            stepInfo.evaluationsCount++;
+            statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
                 k3[i] = step * fCurrentBuffer[i]
@@ -85,7 +86,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             }
             
             equations(time + step, yNextBuffer, fCurrentBuffer)
-            stepInfo.evaluationsCount++
+            statistic.evaluationsCount++
 
             for (i in fLastBuffer.indices){
                 vectorBuffer1[i] = k2[i] - k1[i]
@@ -94,12 +95,12 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
             val q1 = ((6.0 * abs(alpha2) * accuracy / abs(1.0 - 6.0*g)) / zeroSafetyNorm(vectorBuffer1, outY, v))
                 .pow(1.0/3.0)
 
-            if (q1 < 1.0 && !stepInfo.isLowStepSizeReached && !stepInfo.isHighStepSizeReached) {
+            if (q1 < 1.0 && !state.isLowStepSizeReached && !state.isHighStepSizeReached) {
                 step = q1 * step / 1.1
 
-                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
-                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
-                stepInfo.returnsCount++
+                state.isLowStepSizeReached = isLowStepSizeReached(step)
+                state.isHighStepSizeReached = isHighStepSizeReached(step)
+                statistic.returnsCount++
 
                 continue
             }
@@ -113,12 +114,12 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
             val r = findR(k1, k2, k3)
 
-            if (q2 < 1.0 && r < 1.0 && !stepInfo.isLowStepSizeReached && !stepInfo.isHighStepSizeReached) {
+            if (q2 < 1.0 && r < 1.0 && !state.isLowStepSizeReached && !state.isHighStepSizeReached) {
                 step = q2 * step / 1.1
 
-                stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
-                stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
-                stepInfo.returnsCount++
+                state.isLowStepSizeReached = isLowStepSizeReached(step)
+                state.isHighStepSizeReached = isHighStepSizeReached(step)
+                statistic.returnsCount++
 
                 continue
             }
@@ -129,14 +130,14 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
             time += step
 
-            stepInfo.stepsCount++
+            statistic.stepsCount++
 
-            executeStepHandlers(time, outY, stepInfo)
+            executeStepHandlers(time, outY, state, statistic)
 
             step = if(q2 < 1) min(q1, q2)*step else max(step, min(q1, min(q2, r))*step)
 
-            stepInfo.isLowStepSizeReached = isLowStepSizeReached(step)
-            stepInfo.isHighStepSizeReached = isHighStepSizeReached(step)
+            state.isLowStepSizeReached = isLowStepSizeReached(step)
+            state.isHighStepSizeReached = isHighStepSizeReached(step)
 
             val temp = fLastBuffer
             fLastBuffer = fCurrentBuffer
@@ -144,7 +145,7 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
 
             currentEvaluationsCount++
         }
-        return stepInfo
+        return statistic
     }
 
     /*private fun findQ1(k1: DoubleArray, k2: DoubleArray, accuracy: Double) : Double{
@@ -179,7 +180,6 @@ class RK23StabilityControlIntegrator(val evaluations: Int, val accuracy: Double)
         for (i in k1.indices){
             max = max(abs((k3[i] - k2[i] + v) / (k2[i] - k1[i] + v)), max)
         }
-
         return 2.0/max
     }
 }
