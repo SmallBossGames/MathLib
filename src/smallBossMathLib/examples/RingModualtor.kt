@@ -86,7 +86,7 @@ fun ringModulatorMK22Example(){
     val integrator = MK22Integrator(
         1e-5,
         1e-2,
-        0,
+        20,
         2.0
         )
 
