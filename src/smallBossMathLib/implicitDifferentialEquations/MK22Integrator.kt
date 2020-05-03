@@ -11,10 +11,12 @@ const val p2 = 0.5/a
 const val beta = 0.29289321881
 const val alpha = -2*a
 
-class MK22Integrator (val defaultStep: Double,
-                      val accuracy: Double,
-                      val maxFreezeSteps: Int,
-                      val stepGrowthCoefficient: Double) : ImplicitIntegrator() {
+class MK22Integrator (
+    val defaultStep: Double,
+    val accuracy: Double,
+    val maxFreezeSteps: Int,
+    val stepGrowthCoefficient: Double
+) : ImplicitIntegrator() {
 
     @Throws(ExceedingLimitStepsException::class, ExceedingLimitEvaluationsException::class)
     fun integrate(
@@ -23,7 +25,8 @@ class MK22Integrator (val defaultStep: Double,
         t: Double,
         rVector: DoubleArray,
         outY: DoubleArray,
-        equations: (inY: DoubleArray, outF: DoubleArray) -> Unit) : IImplicitMethodStatistic {
+        equations: StationaryODE
+    ) : IImplicitMethodStatistic {
 
         if (y0.size != outY.size)
             throw IllegalArgumentException()
@@ -59,6 +62,8 @@ class MK22Integrator (val defaultStep: Double,
             freezeJacobiStepsCount = 0
         )
 
+        val jacobiSolver = JacobiMatrixSolver(y0.size)
+
         executeStepHandlers(time, outY, state, statistic)
 
         while (time < endTime){
@@ -69,21 +74,7 @@ class MK22Integrator (val defaultStep: Double,
             if(state.freezeJacobiStepsCount == 0){
                 if(isNeedFindJacobi){
                     checkEvaluationCount(statistic.evaluationsCount)
-                    equations(outY, vectorBuffer2)
-                    //statistic.evaluationsCount++
-                    outY.copyInto(vectorBuffer1)
-                    for (i in vectorBuffer1.indices){
-                        val r = max(1e-14, 1e-7*abs(outY[i]))
-                        val jacobiColumn = jacobiMatrix.columns[i]
-                        vectorBuffer1[i] += r
-                        checkEvaluationCount(statistic.evaluationsCount)
-                        equations(vectorBuffer1, jacobiColumn)
-                        //statistic.evaluationsCount++
-                        for (j in jacobiColumn.indices){
-                            jacobiColumn[j] = (jacobiColumn[j] - vectorBuffer2[j]) / r
-                        }
-                        vectorBuffer1[i] = outY[i]
-                    }
+                    jacobiSolver.solve(outY, jacobiMatrix, equations)
                     statistic.jacobiEvaluationsCount++
                 } else{
                     isNeedFindJacobi = true
