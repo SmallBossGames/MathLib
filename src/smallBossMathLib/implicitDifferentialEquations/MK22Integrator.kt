@@ -85,7 +85,9 @@ class MK22Integrator (
                 dMatrix.makeLU()
             }
 
-
+            for (i in vectorBuffer1.indices){
+                vectorBuffer1[i] = outY[i]
+            }
             checkEvaluationCount(statistic.evaluationsCount)
             equations(outY, vectorBuffer2)
             statistic.evaluationsCount++
@@ -123,21 +125,26 @@ class MK22Integrator (
                 q2 = q1
             }
 
-            if (q2 < 1.0 && !state.isLowStepSizeReached && !state.isHighStepSizeReached){
-                if(state.freezeJacobiStepsCount == 0) {
-                    isNeedFindJacobi = false
-                } else {
-                    state.freezeJacobiStepsCount = 0
+            if (q2 < 1.0){
+                if(!state.isLowStepSizeReached && !state.isHighStepSizeReached){
+                    if(state.freezeJacobiStepsCount == 0) {
+                        isNeedFindJacobi = false
+                    } else {
+                        state.freezeJacobiStepsCount = 0
+                    }
+
+                    step *= q2
+
+                    state.isLowStepSizeReached = isLowStepSizeReached(step)
+                    state.isHighStepSizeReached = isHighStepSizeReached(step)
+
+                    statistic.returnsCount++
+
+                    continue
                 }
-
-                step *= q2
-
-                state.isLowStepSizeReached = isLowStepSizeReached(step)
-                state.isHighStepSizeReached = isHighStepSizeReached(step)
-
-                statistic.returnsCount++
-
-                continue
+            } else {
+                state.isHighStepSizeReached = false
+                state.isLowStepSizeReached = false
             }
 
             for (i in outY.indices) {
@@ -160,9 +167,6 @@ class MK22Integrator (
                 state.freezeJacobiStepsCount = 0
                 state.isLowStepSizeReached = isLowStepSizeReached(step)
                 state.isHighStepSizeReached = isHighStepSizeReached(step)
-            } else {
-                state.isHighStepSizeReached = false
-                state.isLowStepSizeReached = false
             }
         }
         return statistic
