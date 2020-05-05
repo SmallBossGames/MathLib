@@ -1,11 +1,15 @@
 package smallBossMathLib.examples
 
 import smallBossMathLib.explicitDifferentialEquations.RK23StabilityControlIntegrator
+import smallBossMathLib.implicitDifferentialEquations.IImplicitMethodStatistic
+import smallBossMathLib.implicitDifferentialEquations.ImplicitEulerIntegrator
 import smallBossMathLib.implicitDifferentialEquations.MK22Integrator
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 import java.io.File
 import kotlin.math.*
+import kotlin.system.measureNanoTime
+import kotlin.system.measureTimeMillis
 
 private const val C = 1.6e-8
 private const val Cs = 2e-12
@@ -83,12 +87,7 @@ fun mainFunction(t: Double, y: DoubleArray, outF: DoubleArray){
 }
 
 fun ringModulatorMK22Example(){
-    val integrator = MK22Integrator(
-        1e-5,
-        1e-2,
-        20,
-        2.0
-        )
+    val integrator = MK22Integrator(1e-2, 20, 2.0)
 
     File("RingModulator.csv ").bufferedWriter().use { out ->
         val output = DoubleArray(16)
@@ -115,8 +114,53 @@ fun ringModulatorMK22Example(){
         }
 
         try {
-            val stat = integrator.integrate(0.0, output, 0.0012, rVector, output, ::mainFunction)
-            println(stat.toString())
+            val time = measureTimeMillis {
+                val stat = integrator
+                    .integrate(0.0, 0.0012, 1e-5, output, rVector, output, ::mainFunction)
+                println("MK22: $stat")
+            }
+            println("Time: $time")
+        } catch (ex: ExceedingLimitEvaluationsException){
+            println(ex.message)
+        } catch (ex: ExceedingLimitStepsException){
+            println(ex.message)
+        }
+    }
+}
+
+fun ringModulatorImplicitEulerExample(){
+    val integrator = ImplicitEulerIntegrator(1e-5, 1e-2)
+
+    File("RingModulator.ImplicitEuler.csv ").bufferedWriter().use { out ->
+        val output = DoubleArray(16)
+        val rVector = DoubleArray(output.size) { 1e-7 }
+
+        var counter = 0
+
+        out.append("stiffness;t;")
+
+        for (i in 1..15)
+            out.append("y$i;")
+
+        out.appendln()
+
+        integrator.addStepHandler(){ _, y, state, _ ->
+            if(counter % 20 == 0){
+                val stiffness = state.jacobiMatrix.evalStiffness()
+                out.append("$stiffness;".replace('.',','))
+                for (item in y)
+                    out.append("$item;".replace('.',','))
+                out.appendln()
+            }
+            counter++
+        }
+
+        try {
+            val time = measureTimeMillis {
+                val stat = integrator.integrate(0.0, output, 0.0012, rVector, output, ::mainFunction)
+                println("ImplicitEuler: $stat")
+            }
+            println("Time: $time")
         } catch (ex: ExceedingLimitEvaluationsException){
             println(ex.message)
         } catch (ex: ExceedingLimitStepsException){

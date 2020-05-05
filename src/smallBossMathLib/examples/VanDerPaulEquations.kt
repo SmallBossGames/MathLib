@@ -19,11 +19,7 @@ fun pseudoVanDerPaul(mu: Double, inY: DoubleArray, outF:DoubleArray){
 
 fun mk22VdPExample(mu: Double)
 {
-    val solver = MK22Integrator(
-        1e-3,
-        0.01,
-        20,
-        2.0)
+    val solver = MK22Integrator(0.01, 20, 2.0)
 
     File("VanDerPaul(mu = ${mu}).csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2;stiffnessCoefficient")
@@ -38,7 +34,7 @@ fun mk22VdPExample(mu: Double)
         val rVector = DoubleArray(output.size) { 1e-7 }
 
         try {
-            val result = solver.integrate(0.0, output,20.0, rVector, output)
+            val result = solver.integrate(0.0, 20.0, 1e-3, output, rVector, output)
             {inY, outY ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
@@ -163,11 +159,7 @@ fun rkm4VdPExample(mu: Double){
 
 fun mk22VdPAlternateExample(p: Double)
 {
-    val solver = MK22Integrator(
-        1e-2,
-        0.01,
-        0,
-        0.0)
+    val solver = MK22Integrator(0.01, 0, 0.0)
 
     File("VanDerPaul(p = ${p}).mk22.csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2;stiffnessCoefficient")
@@ -184,7 +176,7 @@ fun mk22VdPAlternateExample(p: Double)
         val rVector = DoubleArray(output.size) { 1e-7 }
 
         try {
-            solver.integrate(0.0, output,1.0, rVector, output)
+            solver.integrate(0.0, 1.0, 1e-3, output, rVector, output)
             {inY: DoubleArray, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = ((1.0 - inY[0] * inY[1])*inY[1] - inY[0]) / p

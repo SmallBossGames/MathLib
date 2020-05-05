@@ -12,7 +12,6 @@ const val beta = 0.29289321881
 const val alpha = -2*a
 
 class MK22Integrator (
-    val defaultStep: Double,
     val accuracy: Double,
     val maxFreezeSteps: Int,
     val stepGrowthCoefficient: Double
@@ -20,9 +19,10 @@ class MK22Integrator (
 
     @Throws(ExceedingLimitStepsException::class, ExceedingLimitEvaluationsException::class)
     fun integrate(
-        t0: Double,
+        fromT: Double,
+        toT: Double,
+        defaultStep: Double,
         y0: DoubleArray,
-        t: Double,
         rVector: DoubleArray,
         outY: DoubleArray,
         equations: StationaryODE
@@ -32,8 +32,6 @@ class MK22Integrator (
             throw IllegalArgumentException()
 
         y0.copyInto(outY)
-
-        val endTime = t0 + t
 
         val vectorBuffer1 = DoubleArray(y0.size)
         val vectorBuffer2 = DoubleArray(y0.size)
@@ -45,7 +43,7 @@ class MK22Integrator (
         val jacobiMatrix = Matrix2D(y0.size)
 
         var step = defaultStep
-        var time = t0
+        var time = fromT
         var isNeedFindJacobi = true
 
         val statistic = ImplicitMethodStatistic(
@@ -66,8 +64,8 @@ class MK22Integrator (
 
         executeStepHandlers(time, outY, state, statistic)
 
-        while (time < endTime){
-            step = normalizeStep(step, time, endTime)
+        while (time < toT) {
+            step = normalizeStep(step, time, toT)
 
             checkStepCount(statistic.stepsCount)
 
@@ -87,11 +85,9 @@ class MK22Integrator (
                 dMatrix.makeLU()
             }
 
-            for (i in vectorBuffer1.indices){
-                vectorBuffer1[i] = outY[i]
-            }
+
             checkEvaluationCount(statistic.evaluationsCount)
-            equations(vectorBuffer1, vectorBuffer2)
+            equations(outY, vectorBuffer2)
             statistic.evaluationsCount++
             for (i in vectorBuffer2.indices){
                 vectorBuffer2[i] = step*vectorBuffer2[i]
