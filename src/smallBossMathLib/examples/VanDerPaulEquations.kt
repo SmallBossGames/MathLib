@@ -248,7 +248,7 @@ fun eulerVdPExample(mu: Double)
 
 fun implicitEulerVdPExample(mu: Double)
 {
-    val solver = ImplicitEulerIntegrator(1e-3, 0.01)
+    val solver = ImplicitEulerIntegrator(0.01)
 
     File("VanDerPaul(mu = ${mu}).implicitEuler.csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
@@ -262,7 +262,7 @@ fun implicitEulerVdPExample(mu: Double)
         val rVector = DoubleArray(2){1e-7}
 
         try {
-            val result = solver.integrate(0.0, output,20.0, rVector, output)
+            val result = solver.integrate(0.0, 20.0, 1e-3, output, rVector, output)
             {inY: DoubleArray, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]

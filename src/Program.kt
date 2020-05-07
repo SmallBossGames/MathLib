@@ -58,7 +58,7 @@ fun main() {
 
     //rk2VdPExample(6.0)
     
-    ringModulatorMK22Example()
+    //ringModulatorMK22Example()
     //ringModulatorRK23ST()
     ringModulatorImplicitEulerExample()
 

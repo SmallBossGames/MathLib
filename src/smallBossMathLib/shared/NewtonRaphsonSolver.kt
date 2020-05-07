@@ -30,4 +30,29 @@ class NewtonRaphsonSolver(size: Int, val accuracy: Double, val rVector: DoubleAr
                 return
         }
     }
+
+    inline fun solveStaticJacobi(
+        startValue: DoubleArray,
+        outValue: DoubleArray,
+        equations: StationaryODE
+    ){
+        startValue.copyInto(outValue)
+
+        jacobiSolver.solve(outValue, jacobiMatrix, equations)
+        jacobiMatrix.makeLU()
+        jacobiMatrix.inverseLU(bufferMatrix)
+
+        while (true){
+            equations(outValue, vectorBuffer1)
+
+            bufferMatrix.multiply(vectorBuffer1, vectorBuffer2)
+
+            for (i in outValue.indices){
+                outValue[i] = outValue[i] - vectorBuffer2[i]
+            }
+
+            if(zeroSafetyNorm(vectorBuffer2, outValue, rVector) <= accuracy)
+                return
+        }
+    }
 }

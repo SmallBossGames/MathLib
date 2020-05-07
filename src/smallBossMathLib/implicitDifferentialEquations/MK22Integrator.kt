@@ -19,9 +19,9 @@ class MK22Integrator (
 
     @Throws(ExceedingLimitStepsException::class, ExceedingLimitEvaluationsException::class)
     fun integrate(
-        fromT: Double,
-        toT: Double,
-        defaultStep: Double,
+        startTime: Double,
+        endTime: Double,
+        defaultStepSize: Double,
         y0: DoubleArray,
         rVector: DoubleArray,
         outY: DoubleArray,
@@ -42,8 +42,8 @@ class MK22Integrator (
         val dMatrix = Matrix2D(y0.size)
         val jacobiMatrix = Matrix2D(y0.size)
 
-        var step = defaultStep
-        var time = fromT
+        var step = defaultStepSize
+        var time = startTime
         var isNeedFindJacobi = true
 
         val statistic = ImplicitMethodStatistic(
@@ -64,8 +64,8 @@ class MK22Integrator (
 
         executeStepHandlers(time, outY, state, statistic)
 
-        while (time < toT) {
-            step = normalizeStep(step, time, toT)
+        while (time < endTime) {
+            step = normalizeStep(step, time, endTime)
 
             checkStepCount(statistic.stepsCount)
 

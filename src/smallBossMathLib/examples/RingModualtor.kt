@@ -87,7 +87,9 @@ fun mainFunction(t: Double, y: DoubleArray, outF: DoubleArray){
 }
 
 fun ringModulatorMK22Example(){
-    val integrator = MK22Integrator(1e-2, 20, 2.0)
+    val integrator = MK22Integrator(1e-2, 0, 2.0)
+    integrator.enableLowStepLimit(1e-30)
+    integrator.enableHighStepLimit(0.001)
 
     File("RingModulator.csv ").bufferedWriter().use { out ->
         val output = DoubleArray(16)
@@ -116,7 +118,7 @@ fun ringModulatorMK22Example(){
         try {
             val time = measureTimeMillis {
                 val stat = integrator
-                    .integrate(0.0, 0.0012, 1e-5, output, rVector, output, ::mainFunction)
+                    .integrate(0.0, 0.0012, 1e-30, output, rVector, output, ::mainFunction)
                 println("MK22: $stat")
             }
             println("Time: $time")
@@ -129,7 +131,7 @@ fun ringModulatorMK22Example(){
 }
 
 fun ringModulatorImplicitEulerExample(){
-    val integrator = ImplicitEulerIntegrator(1e-5, 1e-2)
+    val integrator = ImplicitEulerIntegrator(1e-3)
 
     File("RingModulator.ImplicitEuler.csv ").bufferedWriter().use { out ->
         val output = DoubleArray(16)
@@ -157,7 +159,15 @@ fun ringModulatorImplicitEulerExample(){
 
         try {
             val time = measureTimeMillis {
-                val stat = integrator.integrate(0.0, output, 0.0012, rVector, output, ::mainFunction)
+                val stat = integrator.integrate(
+                    0.0,
+                    0.0012,
+                    1e-30,
+                    output,
+                    rVector,
+                    output,
+                    ::mainFunction
+                )
                 println("ImplicitEuler: $stat")
             }
             println("Time: $time")

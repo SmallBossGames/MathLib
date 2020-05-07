@@ -4,10 +4,8 @@ import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitE
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 import smallBossMathLib.shared.NewtonRaphsonSolver
 import smallBossMathLib.shared.StationaryODE
-import smallBossMathLib.shared.zeroSafetyNorm
-import kotlin.math.sqrt
 
-class ImplicitEulerIntegrator(val accuracy: Double) : ImplicitIntegrator() {
+class Radau5Order3Integrator(val accuracy: Double) : ImplicitIntegrator() {
     @Throws(ExceedingLimitStepsException::class, ExceedingLimitEvaluationsException::class)
     fun integrate(
         startTime: Double,
@@ -49,52 +47,6 @@ class ImplicitEulerIntegrator(val accuracy: Double) : ImplicitIntegrator() {
         )
 
         equations(y0, fCurrentBuffer)
-
-        while (time < endTime){
-            step = normalizeStep(step, time, endTime)
-
-            newtonSolver.solve(outY, nextY) { y, out ->
-                equations(y, fNextBuffer)
-                for (i in out.indices){
-                    out[i] = outY[i] + step*fNextBuffer[i] - y[i]
-                }
-            }
-
-            for (i in vectorBuffer1.indices){
-                vectorBuffer1[i] = fNextBuffer[i] - fCurrentBuffer[i]
-            }
-
-            val errNorm = 0.5 * step * zeroSafetyNorm(vectorBuffer1, outY, rVector)
-            val q = sqrt(accuracy / errNorm)
-
-            if(q < 1.0 && !state.isLowStepSizeReached && !state.isHighStepSizeReached){
-                step = q * step / 1.1
-
-                state.isLowStepSizeReached = isLowStepSizeReached(step)
-                state.isHighStepSizeReached = isHighStepSizeReached(step)
-                statistic.returnsCount++
-            }
-            else {
-                for (i in outY.indices){
-                    outY[i] = nextY[i]
-                }
-
-                time += step
-
-                statistic.stepsCount++
-
-                executeStepHandlers(time, outY, state, statistic)
-
-                step = q * step / 1.1
-
-                state.isLowStepSizeReached = isLowStepSizeReached(step)
-                state.isHighStepSizeReached = isHighStepSizeReached(step)
-
-                val temp = fCurrentBuffer
-                fCurrentBuffer = fNextBuffer
-                fNextBuffer = temp
-            }
-        }
 
         return statistic
     }
