@@ -19,8 +19,7 @@ class NewtonRaphsonSolver(size: Int, val accuracy: Double, val rVector: DoubleAr
 
             jacobiSolver.solve(outValue, jacobiMatrix, equations)
             jacobiMatrix.makeLU()
-            jacobiMatrix.inverseLU(bufferMatrix)
-            bufferMatrix.multiply(vectorBuffer1, vectorBuffer2)
+            jacobiMatrix.solveLU(vectorBuffer1, vectorBuffer2)
 
             for (i in outValue.indices){
                 outValue[i] = outValue[i] - vectorBuffer2[i]

@@ -21,11 +21,10 @@ class Radau5Order3Integrator(val accuracy: Double) : ImplicitIntegrator() {
 
         y0.copyInto(outY)
 
-        var fCurrentBuffer = DoubleArray(y0.size)
-        var fNextBuffer = DoubleArray(y0.size)
-
-        val nextY = DoubleArray(y0.size)
         val vectorBuffer1 = DoubleArray(y0.size)
+        val vectorBuffer2 = DoubleArray(y0.size)
+
+        val k = Array(2){DoubleArray(y0.size)}
 
         var step = defaultStepSize
         var time = startTime
@@ -46,7 +45,23 @@ class Radau5Order3Integrator(val accuracy: Double) : ImplicitIntegrator() {
             freezeJacobiStepsCount = 0
         )
 
-        equations(y0, fCurrentBuffer)
+        while (time < endTime){
+            step = normalizeStep(step, time, endTime)
+
+            equations(outY, vectorBuffer1)
+            statistic.evaluationsCount++
+            for (i in vectorBuffer1.indices) {
+                k[0][i] = step * vectorBuffer1[i]
+                vectorBuffer2[i] = outY[i] + 1.0 / 3.0 * k[0][i]
+            }
+
+            equations(vectorBuffer2, vectorBuffer1)
+            statistic.evaluationsCount++
+            for (i in vectorBuffer1.indices) {
+                k[0][i] = step * vectorBuffer1[i]
+                vectorBuffer1[i] = outY[i] + 1.0 / 3.0 * k[0][i]
+            }
+        }
 
         return statistic
     }
