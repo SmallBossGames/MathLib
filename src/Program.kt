@@ -37,30 +37,21 @@ class CircleODE(private val c: DoubleArray, private val omega: Double) : FirstOr
 }
 
 fun main() {
-    //Let's try with Van-der-Paul
-
-    /*testRungeKuttaWithStepHandlerSecondOrder(8.0)
-    testRungeKuttaWithStepHandlerSecondOrder(6.0)
-    testRungeKuttaWithStepHandlerSecondOrder(4.0)
-    testRungeKuttaWithStepHandlerSecondOrder(3.0)
-    testRungeKuttaWithStepHandlerSecondOrder(2.5)
-    testRungeKuttaWithStepHandlerSecondOrder(2.0)
-    testRungeKuttaWithStepHandlerSecondOrder(1.0)
-    testRungeKuttaWithStepHandlerSecondOrder(0.01)*/
-
-    //testRungeKuttaWithStepHandlerFourthOrder(1000.0)
-
     //ringModualtorExample()
 
     //rungeKuttaSecondOrderExample(3e-2)
 
     //luTest()
 
+    //kroneckerMultiplyTest1()
+
+    //kroneckerMultiplyTest2()
+
     //rk2VdPExample(6.0)
     
     //ringModulatorMK22Example()
     //ringModulatorRK23ST()
-    ringModulatorImplicitEulerExample()
+    //ringModulatorImplicitEulerExample()
 
     //mk22Other2Test()
     //mk22Other3Test()
@@ -89,4 +80,6 @@ fun main() {
     //rk4stVdPExample(6.0)
 
     //rkm4VdPExample(6.0)
+
+    radau5Order3VdPExample(6.0)
 }

@@ -73,6 +73,18 @@ class Matrix2D(val size: Int) {
         }
     }
 
+    fun kroneckerMultiply(matrix: Matrix2D, outMatrix: Matrix2D){
+        for (i in indices){
+            for(j in indices){
+                for (k in matrix.indices){
+                    for (l in matrix.indices){
+                        outMatrix[matrix.size * i + k, matrix.size * j + l] = this[i, j] * matrix[k, l]
+                    }
+                }
+            }
+        }
+    }
+
     fun evalMaxEigenvalue(): Double {
         var max = 0.0
         for(column in columns){
@@ -106,6 +118,22 @@ class Matrix2D(val size: Int) {
             min = min(sum, min)
         }
         return max / min
+    }
+
+    fun copyFrom(columns: Array<DoubleArray>){
+        for (i in columns.indices) {
+            for (j in columns[i].indices){
+                this[i, j] = columns[i][j]
+            }
+        }
+    }
+
+    fun copyFrom(other: Matrix2D){
+        for (i in other.indices) {
+            for (j in other.indices){
+                this[i, j] = other[i,j]
+            }
+        }
     }
 
     fun makeLU(){

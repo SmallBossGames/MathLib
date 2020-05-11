@@ -3,6 +3,7 @@ package smallBossMathLib.examples
 import smallBossMathLib.explicitDifferentialEquations.*
 import smallBossMathLib.implicitDifferentialEquations.ImplicitEulerIntegrator
 import smallBossMathLib.implicitDifferentialEquations.MK22Integrator
+import smallBossMathLib.implicitDifferentialEquations.Radau5Order3Integrator
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 import java.io.File
@@ -264,6 +265,36 @@ fun implicitEulerVdPExample(mu: Double)
         try {
             val result = solver.integrate(0.0, 20.0, 1e-3, output, rVector, output)
             {inY: DoubleArray, outY: DoubleArray ->
+                outY[0] = inY[1]
+                outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
+            }
+            println("eulerVdPExample: $result")
+        } catch (ex: ExceedingLimitEvaluationsException){
+            println(ex.message)
+        } catch (ex: ExceedingLimitStepsException){
+            println(ex.message)
+        }
+    }
+}
+
+fun radau5Order3VdPExample(mu: Double)
+{
+    val solver = Radau5Order3Integrator(0.01)
+
+    File("VanDerPaul(mu = ${mu}).radau5Order5.csv ").bufferedWriter().use { out ->
+        out.appendln("t;y1;y2")
+        solver.addStepHandler { t, y, _, _ ->
+            val str = "${t};${y[0]};${y[1]}".replace('.', ',')
+            out.appendln(str)
+        }
+        solver.enableStepCountLimit(20000)
+
+        val output = doubleArrayOf(2.0, 0.0)
+        val rVector = DoubleArray(2){1e-7}
+
+        try {
+            val result = solver.integrate(0.0, 20.0, 1e-1, output, rVector, output)
+            { _, inY: DoubleArray, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
             }
