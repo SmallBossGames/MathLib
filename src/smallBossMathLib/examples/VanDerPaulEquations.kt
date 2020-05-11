@@ -279,7 +279,7 @@ fun implicitEulerVdPExample(mu: Double)
 
 fun radau5Order3VdPExample(mu: Double)
 {
-    val solver = Radau5Order3Integrator(0.01)
+    val solver = Radau5Order3Integrator(0.01, 1e-10, 10)
 
     File("VanDerPaul(mu = ${mu}).radau5Order5.csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
@@ -293,7 +293,7 @@ fun radau5Order3VdPExample(mu: Double)
         val rVector = DoubleArray(2){1e-7}
 
         try {
-            val result = solver.integrate(0.0, 20.0, 1e-1, output, rVector, output)
+            val result = solver.integrate(0.0, 20.0, 1e-2, output, rVector, output)
             { _, inY: DoubleArray, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]

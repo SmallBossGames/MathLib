@@ -3,13 +3,22 @@ package smallBossMathLib.implicitDifferentialEquations
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 import smallBossMathLib.shared.*
+import kotlin.math.max
+import kotlin.math.pow
 
-class Radau5Order3Integrator(val accuracy: Double) : ImplicitIntegrator() {
+const val uround = 1e-16
+
+class Radau5Order3Integrator(
+    val relativeTolerance: Double,
+    val absoluteTolerance: Double,
+    val maxNewtonIterations: Int
+) : ImplicitIntegrator() {
     private companion object{
         val aMatrix : Matrix2D = Matrix2D(3)
         val bVector = doubleArrayOf(0.3764030627, 0.51248582618, 0.11111111111)
         val cVector = doubleArrayOf(0.15505102572, 0.64494897427, 1.0)
         val dVector = doubleArrayOf(0.0, 0.0, 1.0)
+        val aMatrixEigenvalue = 0.274889
 
         init {
             aMatrix[0,0] = 0.19681547722
@@ -48,7 +57,6 @@ class Radau5Order3Integrator(val accuracy: Double) : ImplicitIntegrator() {
 
         aMatrix.kroneckerMultiply(identityMatrix, aIdentityMatrixBuffer)
 
-
         val fBuffer = DoubleArray(y0.size)
         val vectorBuffer = DoubleArray(y0.size)
 
@@ -59,7 +67,7 @@ class Radau5Order3Integrator(val accuracy: Double) : ImplicitIntegrator() {
         var step = defaultStepSize
         var time = startTime
 
-        val newtonSolver = NewtonRaphsonSolver(y0.size, accuracy, rVector)
+        val newtonSolver = NewtonRaphsonSolver(y0.size, relativeTolerance, rVector)
         val jacobiSolver = JacobiMatrixSolver(y0.size)
 
         val statistic = ImplicitMethodStatistic(
@@ -75,6 +83,8 @@ class Radau5Order3Integrator(val accuracy: Double) : ImplicitIntegrator() {
             isHighStepSizeReached = isHighStepSizeReached(step),
             freezeJacobiStepsCount = 0
         )
+
+        var faccon = 1.0
 
         while (time < endTime){
             step = normalizeStep(step, time, endTime)
@@ -93,6 +103,9 @@ class Radau5Order3Integrator(val accuracy: Double) : ImplicitIntegrator() {
             for (i in zVector.indices){
                 zVector[i] = 0.0
             }
+
+            var newtonIterationsCount = 0
+            var deltaZNormOld = 0.0
 
             while (true){
                 for (i in aMatrix.indices){
@@ -117,8 +130,21 @@ class Radau5Order3Integrator(val accuracy: Double) : ImplicitIntegrator() {
                     zVector[i] += vectorExtendedBuffer1[i]
                 }
 
-                if(zeroSafetyNorm(vectorExtendedBuffer1, zVector, 1e-10) <= accuracy)
+                val deltaZNorm = zeroSafetyNorm(vectorExtendedBuffer1, zVector, uround)
+
+                faccon = if(newtonIterationsCount > 1){
+                    val theta = deltaZNorm / deltaZNormOld
+                    theta / (1.0 - theta)
+                } else {
+                    max(faccon, uround).pow(0.8)
+                }
+
+                newtonIterationsCount++
+
+                if(faccon * deltaZNorm <= relativeTolerance * 5e-2)
                     break
+
+                deltaZNormOld = deltaZNorm
             }
 
             for (i in zVector.indices){
