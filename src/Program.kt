@@ -56,7 +56,7 @@ fun main() {
     //mk22Other2Test()
     //mk22Other3Test()
 
-    //mk22VdPAlternateExample(3.0e-6)
+    //mk22VdPAlternateExample(1e-6)
     //mk22VdPAlternateExample(3.0e-5)
     //mk22VdPAlternateExample(3.0e-4)
     //mk22VdPAlternateExample(3.0e-3)
@@ -81,5 +81,9 @@ fun main() {
 
     //rkm4VdPExample(6.0)
 
-    radau5Order3VdPExample(6.0)
+    //radau5Order3VdPExample(6.0)
+
+    //ringModulatorRadau5Example()
+
+    impEulerVdPAbsoluteAccuracyTest()
 }

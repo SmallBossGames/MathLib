@@ -4,6 +4,7 @@ import smallBossMathLib.explicitDifferentialEquations.RK23StabilityControlIntegr
 import smallBossMathLib.implicitDifferentialEquations.IImplicitMethodStatistic
 import smallBossMathLib.implicitDifferentialEquations.ImplicitEulerIntegrator
 import smallBossMathLib.implicitDifferentialEquations.MK22Integrator
+import smallBossMathLib.implicitDifferentialEquations.Radau5Order3Integrator
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 import java.io.File
@@ -208,6 +209,55 @@ fun ringModulatorRK23ST() {
 
         try {
             integrator.integrate(0.0, output, 0.001, output, ::mainFunction)
+        } catch (ex: ExceedingLimitEvaluationsException){
+            println(ex.message)
+        } catch (ex: ExceedingLimitStepsException){
+            println(ex.message)
+        }
+    }
+}
+
+fun ringModulatorRadau5Example(){
+    val integrator = Radau5Order3Integrator(1e-4, 1e-10, 10)
+
+    File("RingModulator.Radau5.csv ").bufferedWriter().use { out ->
+        val output = DoubleArray(16)
+        val rVector = DoubleArray(output.size) { 1e-10 }
+
+        var counter = 0
+
+        out.append("stiffness;t;")
+
+        for (i in 0..15)
+            out.append("y$i;")
+
+        out.appendln()
+
+        integrator.addStepHandler(){ t, y, state, _ ->
+            if(counter % 20 == 0){
+                val stiffness = state.jacobiMatrix.evalStiffness()
+                out.append("$stiffness;$t;".replace('.',','))
+                for (item in y)
+                    out.append("$item;".replace('.',','))
+                out.appendln()
+            }
+            counter++
+        }
+
+        try {
+            val time = measureTimeMillis {
+                val stat = integrator.integrate(
+                    0.0,
+                    0.0012,
+                    1e-30,
+                    output,
+                    rVector,
+                    output,
+                    ::mainFunction
+                )
+                println("ImplicitEuler: $stat")
+            }
+            println("Time: $time")
         } catch (ex: ExceedingLimitEvaluationsException){
             println(ex.message)
         } catch (ex: ExceedingLimitStepsException){
