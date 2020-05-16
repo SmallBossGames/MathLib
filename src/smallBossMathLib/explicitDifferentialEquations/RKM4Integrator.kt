@@ -1,15 +1,17 @@
 package smallBossMathLib.explicitDifferentialEquations
 
+import smallBossMathLib.shared.NonStationaryODE
 import kotlin.math.abs
 
-class RKM4Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIntegrator() {
+class RKM4Integrator(val accuracy: Double) : ExplicitIntegrator() {
     fun integrate(
-        t0: Double,
+        startTime: Double,
+        endTime: Double,
+        defaultStepSize: Double,
         y0: DoubleArray,
-        t: Double,
-        rVector:DoubleArray,
+        rVector: DoubleArray,
         outY: DoubleArray,
-        equations: (y: DoubleArray, outF: DoubleArray) -> Unit
+        equations: NonStationaryODE
     ) : IExplicitMethodStatistic {
         y0.copyInto(outY)
 
@@ -19,10 +21,8 @@ class RKM4Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
 
         val k = Array(5){ DoubleArray(y0.size) }
 
-        var time = t0
-        var step = defaultStep
-
-        val endTime = t0 + t
+        var time = startTime
+        var step = defaultStepSize
 
         val statistic = ExplicitMethodStatistic(
             stepsCount = 0,
@@ -40,7 +40,7 @@ class RKM4Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
         mainLoop@ while (time < endTime) {
             step = normalizeStep(step, time, endTime)
 
-            equations(outY, fCurrentBuffer)
+            equations(time, outY, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -48,7 +48,7 @@ class RKM4Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
                 yNextBuffer[i] = outY[i] + 1.0 / 3.0 * k[0][i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + 1.0 / 3.0 * step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -56,7 +56,7 @@ class RKM4Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
                 yNextBuffer[i] = outY[i] + 1.0 / 6.0 * k[0][i] + 1.0 / 6.0 * k[1][i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + 1.0 / 3.0 * step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -64,7 +64,7 @@ class RKM4Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
                 yNextBuffer[i] = outY[i] + 1.0 / 8.0 * k[0][i] + 3.0 / 8.0 * k[2][i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + 1.0 / 2.0 * step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -72,7 +72,7 @@ class RKM4Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
                 yNextBuffer[i] = outY[i] + 1.0 / 2.0 * k[0][i] - 3.0 / 2.0 * k[2][i] + 2.0 * k[3][i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {

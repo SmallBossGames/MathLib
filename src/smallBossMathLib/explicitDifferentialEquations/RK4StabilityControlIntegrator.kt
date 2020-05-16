@@ -1,21 +1,21 @@
 package smallBossMathLib.explicitDifferentialEquations
 
+import smallBossMathLib.shared.NonStationaryODE
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.*
 
-private const val v = 1e-7
+//private const val v = 1e-7
 
-class RK4StabilityControlIntegrator(
-    val defaultStep: Double,
-    val accuracy: Double
-) : ExplicitIntegrator() {
+class RK4StabilityControlIntegrator(val accuracy: Double) : ExplicitIntegrator() {
 
     fun integrate(
-        t0: Double,
+        startTime: Double,
+        endTime: Double,
+        defaultStepSize: Double,
         y0: DoubleArray,
-        t: Double,
+        rVector: DoubleArray,
         outY: DoubleArray,
-        equations: (y: DoubleArray, outF: DoubleArray) -> Unit
+        equations: NonStationaryODE
     ) : IExplicitMethodStatistic {
         y0.copyInto(outY)
 
@@ -26,8 +26,8 @@ class RK4StabilityControlIntegrator(
 
         val k = Array(5){ DoubleArray(y0.size) }
 
-        var time = t0
-        var step = defaultStep
+        var time = startTime
+        var step = defaultStepSize
 
         val statistic = ExplicitMethodStatistic(
             stepsCount = 0,
@@ -40,14 +40,12 @@ class RK4StabilityControlIntegrator(
             isHighStepSizeReached = isHighStepSizeReached(step)
         )
 
-        val endTime = t0 + t
-
-        executeStepHandlers(t0, y0, state, statistic)
+        executeStepHandlers(time, y0, state, statistic)
 
         while (time < endTime) {
             step = normalizeStep(step, time, endTime)
 
-            equations(outY, fCurrentBuffer)
+            equations(time, outY, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -55,7 +53,7 @@ class RK4StabilityControlIntegrator(
                 yNextBuffer[i] = outY[i] + 1.0 / 3.0 * k[0][i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + 1.0 / 3.0 * step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -63,7 +61,7 @@ class RK4StabilityControlIntegrator(
                 yNextBuffer[i] = outY[i] + 1.0 / 6.0 * k[0][i] + 1.0 / 6.0 * k[1][i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + 1.0 / 3.0 * step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -71,7 +69,7 @@ class RK4StabilityControlIntegrator(
                 yNextBuffer[i] = outY[i] + 1.0 / 8.0 * k[0][i] + 3.0 / 8.0 * k[2][i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + 1.0 / 2.0 * step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -79,7 +77,7 @@ class RK4StabilityControlIntegrator(
                 yNextBuffer[i] = outY[i] + 1.0 / 2.0 * k[0][i] - 3.0 / 2.0 * k[2][i] + 2.0 * k[3][i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -90,7 +88,7 @@ class RK4StabilityControlIntegrator(
                 vectorBuffer1[i] = 2*k[0][i] - 9*k[2][i] + 8*k[3][i] - k[4][i]
             }
 
-            val cNorm = accuracy.pow(5.0/4.0) / (zeroSafetyNorm(vectorBuffer1, outY, v) / 150.0)
+            val cNorm = accuracy.pow(5.0/4.0) / (zeroSafetyNorm(vectorBuffer1, outY, rVector) / 30.0)
             val q1 = cNorm.pow(1.0/4.0)
 
             if (q1 < 1.0 && !state.isLowStepSizeReached && !state.isHighStepSizeReached) {

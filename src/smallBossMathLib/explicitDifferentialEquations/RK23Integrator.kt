@@ -1,5 +1,6 @@
 package smallBossMathLib.explicitDifferentialEquations
 
+import smallBossMathLib.shared.NonStationaryODE
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.abs
 import kotlin.math.max
@@ -16,14 +17,15 @@ private const val p1 = 1.0/7.0
 private const val p2 = 3.0/8.0
 private const val p3 = 27.0/56.0
 
-class RK23Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIntegrator() {
+class RK23Integrator(val accuracy: Double) : ExplicitIntegrator() {
     fun integrate(
-        t0: Double,
+        startTime: Double,
+        endTime: Double,
+        defaultStepSize: Double,
         y0: DoubleArray,
-        t: Double,
-        rVector:DoubleArray,
+        rVector: DoubleArray,
         outY: DoubleArray,
-        equations: (inY: DoubleArray, outY: DoubleArray) -> Unit
+        equations: NonStationaryODE
     ) : ExplicitMethodStatistic {
         y0.copyInto(outY)
 
@@ -38,10 +40,8 @@ class RK23Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
         val k2 = DoubleArray(y0.size)
         val k3 = DoubleArray(y0.size)
 
-        var time = t0
-        var step = defaultStep
-
-        val endTime = t0 + t
+        var time = startTime
+        var step = defaultStepSize
 
         val statistic = ExplicitMethodStatistic(
             stepsCount = 0,
@@ -56,7 +56,7 @@ class RK23Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
 
         executeStepHandlers(time, outY, state, statistic)
 
-        equations(outY, fLastBuffer)
+        equations(time, outY, fLastBuffer)
 
         while (time < endTime){
             step = normalizeStep(step, time, endTime)
@@ -66,7 +66,7 @@ class RK23Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
                 yNextBuffer[i] = outY[i] + beta21 * k1[i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + alpha2 * step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -74,7 +74,7 @@ class RK23Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
                 yNextBuffer[i] = outY[i] + beta31 * k1[i] + beta32 * k2[i]
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + alpha3 * step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fCurrentBuffer.indices) {
@@ -99,7 +99,7 @@ class RK23Integrator(val defaultStep: Double, val accuracy: Double) : ExplicitIn
                 continue
             }
 
-            equations(yNextBuffer, fCurrentBuffer)
+            equations(time + step, yNextBuffer, fCurrentBuffer)
             statistic.evaluationsCount++
 
             for (i in fLastBuffer.indices){

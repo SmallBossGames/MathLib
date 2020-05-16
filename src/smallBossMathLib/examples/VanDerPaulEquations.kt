@@ -7,11 +7,18 @@ import smallBossMathLib.implicitDifferentialEquations.Radau5Order3Integrator
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitEvaluationsException
 import smallBossMathLib.implicitDifferentialEquations.exceptions.ExceedingLimitStepsException
 import java.io.File
+import kotlin.math.pow
 
-val ref2 = doubleArrayOf(1.937042200, -0.702249465)
-val ref4 = doubleArrayOf(1.7185581778, -0.879712258)
-val ref6 = doubleArrayOf(1.70616743, -0.8928100)
-val ref8 = doubleArrayOf(1.70557, -0.893445)
+val references = arrayOf(
+    doubleArrayOf(1.937042200, -0.702249465),
+    doubleArrayOf(1.7629587057, -0.835943058),
+    doubleArrayOf(1.7185581778, -0.879712258),
+    doubleArrayOf(1.70840488, -0.890416),
+    doubleArrayOf(1.70616743, -0.8928100),
+    doubleArrayOf(1.705680, -0.893332),
+    doubleArrayOf(1.70557, -0.893445))
+
+val referencesEpsilon = DoubleArray(references.size){ i -> 1.0/10.0.pow(i+2)}
 
 fun defaultVanDerPaul(mu: Double, inY: DoubleArray, outF:DoubleArray){
     outF[0] = inY[1]
@@ -55,7 +62,9 @@ fun mk22VdPExample(mu: Double)
 }
 
 fun rk2stVdPExample(mu: Double){
-    val solverRK2 = RK23StabilityControlIntegrator(1e-3,0.01)
+    val solverRK2 = RK23StabilityControlIntegrator(0.01)
+    val output = doubleArrayOf(-2.0, 0.0)
+    val rVector = DoubleArray(2){1e-12}
 
     File("VanDerPaul(mu = $mu).rk23st.csv ").bufferedWriter().use { out ->
         solverRK2.addStepHandler { t, y, _, _ ->
@@ -63,10 +72,9 @@ fun rk2stVdPExample(mu: Double){
             out.appendln(str)
         }
         //solverRK2.enableStepCountLimit(2000)
-        val output = doubleArrayOf(-2.0, 0.0)
 
         try {
-            val result = solverRK2.integrate(0.0, output,20.0, output)
+            val result = solverRK2.integrate(0.0,20.0, 1e-3, output, rVector, output)
             { _, inY, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
@@ -81,7 +89,9 @@ fun rk2stVdPExample(mu: Double){
 }
 
 fun rk2VdPExample(mu: Double){
-    val solverRK2 = RK23Integrator(1e-3,0.01)
+    val solverRK2 = RK23Integrator(0.01)
+    val output = doubleArrayOf(-2.0, 0.0)
+    val rVector = DoubleArray(output.size) {1e-7}
 
     File("VanDerPaul(mu = $mu).rk23.csv ").bufferedWriter().use { out ->
         solverRK2.addStepHandler {t, y, _, _ ->
@@ -89,14 +99,13 @@ fun rk2VdPExample(mu: Double){
             out.appendln(str)
         }
         //solverRK2.enableStepCountLimit(2000)
-        val output = doubleArrayOf(-2.0, 0.0)
-        val rVector = DoubleArray(output.size) {1e-7}
+
 
         try {
-            val result = solverRK2.integrate(0.0, output,20.0, rVector, output)
-            { inY: DoubleArray, outY: DoubleArray ->
-                outY[0] = inY[1]
-                outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
+            val result = solverRK2.integrate(0.0, 2.0, 1e-3, output, rVector, output)
+            {_, y, f ->
+                f[0] = y[1]
+                f[1] = mu * (1 - y[0] * y[0]) * y[1] - y[0]
             }
             println("rk2VdPExample: $result")
         } catch (ex: ExceedingLimitEvaluationsException){
@@ -109,7 +118,9 @@ fun rk2VdPExample(mu: Double){
 
 
 fun rk4stVdPExample(mu: Double){
-    val solverRK2 = RK4StabilityControlIntegrator(1e-3,0.01)
+    val solverRK2 = RK4StabilityControlIntegrator(0.01)
+    val output = doubleArrayOf(-2.0, 0.0)
+    val rVector = DoubleArray(2){ 1e-12 }
 
     File("VanDerPaul(mu = $mu).rk45st.csv ").bufferedWriter().use { out ->
         solverRK2.addStepHandler { t, y, _, _ ->
@@ -117,11 +128,10 @@ fun rk4stVdPExample(mu: Double){
             out.appendln(str)
         }
         //solverRK2.enableStepCountLimit(2000)
-        val output = doubleArrayOf(-2.0, 0.0)
 
         try {
-            val result = solverRK2.integrate(0.0, output,20.0, output)
-            { inY: DoubleArray, outY: DoubleArray ->
+            val result = solverRK2.integrate(0.0,20.0, 1e-3, output, rVector, output)
+            { _, inY: DoubleArray, outY: DoubleArray ->
                 outY[0] = inY[1]
                 outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
             }
@@ -135,7 +145,9 @@ fun rk4stVdPExample(mu: Double){
 }
 
 fun rkm4VdPExample(mu: Double){
-    val solverRK2 = RKM4Integrator(1e-3,0.01)
+    val solverRK2 = RKM4Integrator(0.01)
+    val output = doubleArrayOf(-2.0, 0.0)
+    val rVector = DoubleArray(output.size) {1e-7}
 
     File("VanDerPaul(mu = $mu).rkm4.csv ").bufferedWriter().use { out ->
         solverRK2.addStepHandler { t, y, _, _ ->
@@ -143,14 +155,12 @@ fun rkm4VdPExample(mu: Double){
             out.appendln(str)
         }
         //solverRK2.enableStepCountLimit(2000)
-        val output = doubleArrayOf(-2.0, 0.0)
-        val rVector = DoubleArray(output.size) {1e-7}
 
         try {
-            val result = solverRK2.integrate(0.0, output,20.0, rVector, output)
-            { inY: DoubleArray, outY: DoubleArray ->
-                outY[0] = inY[1]
-                outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
+            val result = solverRK2.integrate(0.0, 20.0,1e-3, output, rVector, output)
+            { _, y, f ->
+                f[0] = y[1]
+                f[1] = mu * (1 - y[0] * y[0]) * y[1] - y[0]
             }
             println("RKM4: $result")
 
@@ -197,24 +207,22 @@ fun mk22VdPAlternateExample(p: Double)
 
 fun eulerVdPAlternateExample(p: Double)
 {
-    val solver = EulerIntegrator(1e-3, 0.01)
+    val solver = EulerIntegrator(1e-3)
+    val output = doubleArrayOf(2.0, 0.0)
+    val rVector = DoubleArray(output.size) { 1e-7 }
 
-    File("VanDerPaul(p = ${p}).csv ").bufferedWriter().use { out ->
+    File("VanDerPaul(p = ${p}).euler.csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
         solver.addStepHandler { t, y, _, _ ->
-            val str = "${t};${y[0]};${y[1]}".replace('.', ',')
+            val str = "${t};${y[0]};${y[1]}"
             out.appendln(str)
         }
-        solver.enableStepCountLimit(20000)
-
-        val output = doubleArrayOf(2.0, 0.0)
+        solver.enableStepCountLimit(2000000)
 
         try {
-            solver.integrate(0.0, output,10.0, output)
-            {inY: DoubleArray, outY: DoubleArray ->
-                outY[0] = inY[1]
-                outY[1] = ((1.0 - inY[0] * inY[1])*inY[1] - inY[0]) / p
-            }
+            val result = solver.integrate(0.0, 2.0, 1e-3, output, rVector, output)
+            { _, y, f -> pseudoVanDerPaul(p, y, f) }
+            println("EulerVdPAlternate: $result")
         } catch (ex: ExceedingLimitEvaluationsException){
             println(ex.message)
         } catch (ex: ExceedingLimitStepsException){
@@ -225,24 +233,20 @@ fun eulerVdPAlternateExample(p: Double)
 
 fun eulerVdPExample(mu: Double)
 {
-    val solver = EulerIntegrator(1e-3, 0.01)
+    val solver = EulerIntegrator(1e-3)
+    val output = doubleArrayOf(2.0, 0.0)
+    val rVector = DoubleArray(output.size) { 1e-7 }
 
     File("VanDerPaul(mu = ${mu}).euler.csv ").bufferedWriter().use { out ->
         out.appendln("t;y1;y2")
         solver.addStepHandler { t, y, _, _ ->
-            val str = "${t};${y[0]};${y[1]}".replace('.', ',')
+            val str = "${t};${y[0]};${y[1]}"
             out.appendln(str)
         }
-        solver.enableStepCountLimit(20000)
-
-        val output = doubleArrayOf(2.0, 0.0)
 
         try {
-            val result = solver.integrate(0.0, output,20.0, output)
-            {inY: DoubleArray, outY: DoubleArray ->
-                outY[0] = inY[1]
-                outY[1] = mu * (1 - inY[0] * inY[0]) * inY[1] - inY[0]
-            }
+            val result = solver.integrate(0.0, 20.0, 1e-3, output, rVector, output)
+            { _, y, f ->  defaultVanDerPaul(mu, y, f)}
             println("eulerVdPExample: $result")
         } catch (ex: ExceedingLimitEvaluationsException){
             println(ex.message)
@@ -321,72 +325,105 @@ fun mk22VdPAbsoluteAccuracyTestStage(accuracy: Double)
 
     println("Accuracy: $accuracy")
 
-    solver.integrate(0.0, 2.0, 1e-3, input, rVector, output)
-    {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(1e-2, y, f)}
-
-    printResultWithDelta(output, ref2)
-
-    solver.integrate(0.0, 2.0, 1e-3, input, rVector, output)
-    {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(1e-4, y, f)}
-
-    printResultWithDelta(output, ref4)
-
-    solver.integrate(0.0, 2.0, 1e-3, input, rVector, output)
-    {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(1e-6, y, f)}
-
-    printResultWithDelta(output, ref6)
-
-    solver.integrate(0.0, 2.0, 1e-3, input, rVector, output)
-    {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(1e-8, y, f)}
-
-    printResultWithDelta(output, ref8)
+    for (i in references.indices){
+        solver.integrate(0.0, 2.0, 1e-3, input, rVector, output)
+        {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(referencesEpsilon[i], y, f)}
+        println("Eps: ${referencesEpsilon[i]}")
+        printResultWithDelta(output, references[i])
+    }
 }
 
-fun impEulerVdPAbsoluteAccuracyTestStage(accuracy: Double)
-{
-    val solver = ImplicitEulerIntegrator(accuracy)
-    val input = doubleArrayOf(2.0, -0.66)
-    val output = DoubleArray(2)
-    val rVector = DoubleArray(input.size) { 1e-7 }
-
-    println("Accuracy: $accuracy")
-
-    solver.integrate(0.0, 2.0, 1e-3, input, rVector, output)
-    {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(1e-2, y, f)}
-
-    printResultWithDelta(output, ref2)
-
-    solver.integrate(0.0, 2.0, 1e-3, input, rVector, output)
-    {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(1e-4, y, f)}
-
-    printResultWithDelta(output, ref4)
-
-    solver.integrate(0.0, 2.0, 1e-3, input, rVector, output)
-    {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(1e-6, y, f)}
-
-    printResultWithDelta(output, ref6)
-
-    solver.integrate(0.0, 2.0, 1e-3, input, rVector, output)
-    {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(1e-8, y, f)}
-
-    printResultWithDelta(output, ref8)
-}
 
 fun mk22VdPAbsoluteAccuracyTest(){
-    mk22VdPAbsoluteAccuracyTestStage(1e-2)
-    mk22VdPAbsoluteAccuracyTestStage(1e-4)
-    mk22VdPAbsoluteAccuracyTestStage(1e-6)
-    mk22VdPAbsoluteAccuracyTestStage(1e-8)
-    mk22VdPAbsoluteAccuracyTestStage(1e-10)
-    mk22VdPAbsoluteAccuracyTestStage(1e-12)
+    absoluteAccuracyTest {
+            tol, eps, input, r, out ->
+        val solver = MK22Integrator(tol, 0, 0.0)
+        solver.integrate(0.0, 2.0, 1e-3, input, r, out)
+        {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(eps, y, f)}
+    }
 }
 
-fun impEulerVdPAbsoluteAccuracyTest(){
-    impEulerVdPAbsoluteAccuracyTestStage(1e-2)
-    impEulerVdPAbsoluteAccuracyTestStage(1e-4)
-    impEulerVdPAbsoluteAccuracyTestStage(1e-6)
-    impEulerVdPAbsoluteAccuracyTestStage(1e-8)
-    impEulerVdPAbsoluteAccuracyTestStage(1e-10)
-    impEulerVdPAbsoluteAccuracyTestStage(1e-12)
+fun eulerAbsoluteAccuracyTest(){
+    absoluteAccuracyTest {
+            tol, eps, input, r, out ->
+        val solver = EulerIntegrator(tol)
+        solver.integrate(0.0, 2.0, 1e-3, input, r, out)
+        {_, y, f -> pseudoVanDerPaul(eps, y, f)}
+    }
+}
+
+fun impEulerAbsoluteAccuracyTest(){
+    absoluteAccuracyTest {
+            tol, eps, input, r, out ->
+        val solver = ImplicitEulerIntegrator(tol)
+        solver.integrate(0.0, 2.0, 1e-3, input, r, out)
+        {y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(eps, y, f)}
+    }
+}
+
+fun rk23AbsoluteAccuracyTest(){
+    absoluteAccuracyTest {
+            tol, eps, input, r, out ->
+        val solver = RK23Integrator(tol)
+        solver.integrate(0.0, 2.0, 1e-3, input, r, out)
+        {_, y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(eps, y, f)}
+    }
+}
+
+fun rkm45AbsoluteAccuracyTest(){
+    absoluteAccuracyTest {
+            tol, eps, input, r, out ->
+        val solver = RKM4Integrator(tol)
+        solver.integrate(0.0, 2.0, 1e-3, input, r, out)
+        {_, y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(eps, y, f)}
+    }
+}
+
+fun rk23stAbsoluteAccuracyTest(){
+    absoluteAccuracyTest {
+            tol, eps, input, r, out ->
+        val solver = RK23StabilityControlIntegrator(tol)
+        solver.integrate(0.0, 2.0, 1e-3, input, r, out)
+        {_, y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(eps, y, f)}
+    }
+}
+
+fun rk45stAbsoluteAccuracyTest(){
+    absoluteAccuracyTest {
+            tol, eps, input, r, out ->
+        val solver = RK4StabilityControlIntegrator(tol)
+        solver.integrate(0.0, 2.0, 1e-3, input, r, out)
+        {_, y: DoubleArray, f: DoubleArray -> pseudoVanDerPaul(eps, y, f)}
+    }
+}
+
+inline fun absoluteAccuracyTest(
+    integrate: (tol: Double, eps: Double, input: DoubleArray, r:DoubleArray, out: DoubleArray) -> Unit
+){
+    val input = doubleArrayOf(2.0, -0.66)
+    val output = DoubleArray(2)
+    val rVector = DoubleArray(input.size) { 1e-12 }
+
+    print("aTol/eps;")
+    for (i in referencesEpsilon)
+        print("$i;")
+    println()
+    for (i in 2..12 step 2){
+        val accuracy =  1.0/10.0.pow(i)
+        print("$accuracy;")
+        for (j in referencesEpsilon.indices){
+            val eps = referencesEpsilon[j]
+            val reference = references[j]
+            integrate(accuracy, eps, input, rVector, output)
+            val delta = findDelta(reference, output)
+            print("$delta;")
+        }
+        println()
+    }
+}
+
+fun eulerBreakpointTest(){
+    for (i in 2..10)
+        eulerVdPAlternateExample(1.0/10.0.pow(i))
 }
 

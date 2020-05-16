@@ -1,5 +1,6 @@
 package smallBossMathLib.explicitDifferentialEquations
 
+import smallBossMathLib.shared.NonStationaryODE
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.*
 
@@ -15,15 +16,17 @@ private const val p3 = 27.0/56.0
 
 private const val v = 1e-7
 
-class RK23StabilityControlIntegrator(val defaultStep: Double, val accuracy: Double)
+class RK23StabilityControlIntegrator(val accuracy: Double)
     : ExplicitIntegrator()
 {
     fun integrate(
-        t0: Double,
+        startTime: Double,
+        endTime: Double,
+        defaultStepSize: Double,
         y0: DoubleArray,
-        t: Double,
+        rVector: DoubleArray,
         outY: DoubleArray,
-        equations: (t: Double, inY: DoubleArray, outY: DoubleArray) -> Unit
+        equations: NonStationaryODE
     ) : IExplicitMethodStatistic {
         y0.copyInto(outY)
 
@@ -38,10 +41,8 @@ class RK23StabilityControlIntegrator(val defaultStep: Double, val accuracy: Doub
         val k2 = DoubleArray(y0.size)
         val k3 = DoubleArray(y0.size)
 
-        var time = t0
-        var step = defaultStep
-
-        val endTime = t0 + t
+        var time = startTime
+        var step = defaultStepSize
 
         val statistic = ExplicitMethodStatistic(
             stepsCount = 0,
@@ -92,7 +93,7 @@ class RK23StabilityControlIntegrator(val defaultStep: Double, val accuracy: Doub
                 vectorBuffer1[i] = k2[i] - k1[i]
             }
 
-            val q1 = ((6.0 * abs(alpha2) * accuracy / abs(1.0 - 6.0*g)) / zeroSafetyNorm(vectorBuffer1, outY, v))
+            val q1 = ((6.0 * abs(alpha2) * accuracy / abs(1.0 - 6.0*g)) / zeroSafetyNorm(vectorBuffer1, outY, rVector))
                 .pow(1.0/3.0)
 
             if (q1 < 1.0 && !state.isLowStepSizeReached && !state.isHighStepSizeReached) {
@@ -109,7 +110,7 @@ class RK23StabilityControlIntegrator(val defaultStep: Double, val accuracy: Doub
                 vectorBuffer1[i] = fCurrentBuffer[i] - fLastBuffer[i]
             }
 
-            val q2 = ((6.0*accuracy / (abs(1.0 - 6.0*g)*step)) / zeroSafetyNorm(vectorBuffer1, outY, v))
+            val q2 = ((6.0*accuracy / (abs(1.0 - 6.0*g)*step)) / zeroSafetyNorm(vectorBuffer1, outY, rVector))
                 .pow(1.0/3.0)
 
             val r = findR(k1, k2, k3)
@@ -147,33 +148,6 @@ class RK23StabilityControlIntegrator(val defaultStep: Double, val accuracy: Doub
         }
         return statistic
     }
-
-    /*private fun findQ1(k1: DoubleArray, k2: DoubleArray, accuracy: Double) : Double{
-        require(k1.size == k2.size)
-
-        var norm = 0.0
-        for (i in k1.indices){
-            val d = (k2[i] - k1[i])
-            norm += d*d
-        }
-        norm = sqrt(norm)
-
-        //стр. 95
-        return (((6.0 * 2.0/3.0 * accuracy) / (1.0 - 6.0 * 1.0/16.0)) / norm)
-    }*/
-
-    /*private fun findQ2(f1: DoubleArray, f2: DoubleArray, step:Double, accuracy: Double) : Double {
-        require(f1.size == f2.size)
-
-        var norm = 0.0
-        for (i in f1.indices){
-            val d = f1[i] - f2[i]
-            norm += d*d
-        }
-        norm *= step
-
-        return ((6.0*accuracy / (1.0 - 6.0 * 1.0 / 16.0)) / norm)
-    }*/
 
     private fun findR(k1: DoubleArray, k2: DoubleArray, k3: DoubleArray) : Double {
         var max = 0.0

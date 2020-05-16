@@ -180,7 +180,7 @@ fun ringModulatorImplicitEulerExample(){
     }
 }
 
-fun ringModulatorRK23ST() {
+/*fun ringModulatorRK23ST() {
     val integrator = RK23StabilityControlIntegrator(1e-5, 0.001)
     integrator.enableStepCountLimit(50000)
 
@@ -215,7 +215,7 @@ fun ringModulatorRK23ST() {
             println(ex.message)
         }
     }
-}
+}*/
 
 fun ringModulatorRadau5Example(){
     val integrator = Radau5Order3Integrator(1e-4, 1e-10, 10)

@@ -2,6 +2,7 @@ import org.apache.commons.math3.analysis.differentiation.DerivativeStructure
 import org.apache.commons.math3.analysis.differentiation.UnivariateDifferentiableFunction
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations
 import smallBossMathLib.examples.*
+import kotlin.system.measureTimeMillis
 
 class MyFunction:UnivariateDifferentiableFunction{
     override fun value(t: DerivativeStructure?): DerivativeStructure {
@@ -71,6 +72,8 @@ fun main() {
 
     //eulerVdPExample(6.0)
 
+    //eulerVdPAlternateExample(1e-2)
+
     //implicitEulerVdPExample(6.0)
 
     //rk2stVdPExample(6.0)
@@ -85,5 +88,14 @@ fun main() {
 
     //ringModulatorRadau5Example()
 
-    impEulerVdPAbsoluteAccuracyTest()
+    //impEulerAbsoluteAccuracyTest()
+    //mk22VdPAbsoluteAccuracyTest()
+    //eulerAbsoluteAccuracyTest()
+    //rk23AbsoluteAccuracyTest()
+    //rkm45AbsoluteAccuracyTest()
+    // rk23stAbsoluteAccuracyTest()
+    rkm45AbsoluteAccuracyTest()
+
+
+    //eulerBreakpointTest()
 }

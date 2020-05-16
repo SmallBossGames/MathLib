@@ -1,17 +1,20 @@
 package smallBossMathLib.explicitDifferentialEquations
 
+import smallBossMathLib.shared.NonStationaryODE
+import smallBossMathLib.shared.StationaryODE
 import smallBossMathLib.shared.zeroSafetyNorm
 import kotlin.math.sqrt
 
 
-class EulerIntegrator(val defaultStep: Double,
-                      val accuracy: Double) : ExplicitIntegrator() {
+class EulerIntegrator(val accuracy: Double) : ExplicitIntegrator() {
     fun integrate(
-        t0: Double,
+        startTime: Double,
+        endTime: Double,
+        defaultStepSize: Double,
         y0: DoubleArray,
-        t: Double,
+        rVector: DoubleArray,
         outY: DoubleArray,
-        equations: (y: DoubleArray, f: DoubleArray) -> Unit
+        equations: NonStationaryODE
     ) : IExplicitMethodStatistic {
         y0.copyInto(outY)
 
@@ -22,10 +25,8 @@ class EulerIntegrator(val defaultStep: Double,
 
         val vectorBuffer = DoubleArray(y0.size)
 
-        var time = t0
-        var step = defaultStep
-
-        val endTime = time+t
+        var time = startTime
+        var step = defaultStepSize
 
         val statistic = ExplicitMethodStatistic(
             stepsCount = 0,
@@ -40,16 +41,17 @@ class EulerIntegrator(val defaultStep: Double,
 
         executeStepHandlers(time, outY, state, statistic)
 
-        equations(outY, fCurrentBuffer)
+        equations(time, outY, fCurrentBuffer)
 
         while (time < endTime){
+            checkStepCount(statistic.stepsCount)
             step = normalizeStep(step, time, endTime)
 
             for (i in yNextBuffer.indices){
                 yNextBuffer[i] = outY[i] + step*fCurrentBuffer[i]
             }
 
-            equations(yNextBuffer, fNextBuffer)
+            equations(time + step, yNextBuffer, fNextBuffer)
 
             statistic.evaluationsCount++
 
@@ -57,7 +59,7 @@ class EulerIntegrator(val defaultStep: Double,
                 vectorBuffer[i] = fNextBuffer[i] - fCurrentBuffer[i]
             }
 
-            val errNorm = 0.5 * step * zeroSafetyNorm(vectorBuffer, outY, 1e-7)
+            val errNorm = 0.5 * step * zeroSafetyNorm(vectorBuffer, outY, rVector)
             val q = sqrt(accuracy / errNorm)
 
             if(q < 1.0 && !state.isLowStepSizeReached && !state.isHighStepSizeReached){
